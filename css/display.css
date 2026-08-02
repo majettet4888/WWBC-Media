@@ -225,9 +225,13 @@ body.display-page {
     font-weight: bold;
     letter-spacing: 4px;
 
-    /* Forces all digits to the same height/baseline AND the same
-       width, so the countdown doesn't shift or jitter left-right
-       as the digits change each second. */
+    /* Georgia's digits are inconsistently sized/aligned by design
+       (old-style figures), and it doesn't support the OpenType
+       features that would normally fix that. Sans-serif fonts use
+       uniform, same-height, same-width digits by default, so this
+       guarantees a stable-looking countdown regardless of font
+       feature support. */
+    font-family: Arial, Helvetica, sans-serif;
     font-variant-numeric: lining-nums tabular-nums;
     font-feature-settings: "lnum" 1, "tnum" 1;
 
