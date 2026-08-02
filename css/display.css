@@ -85,17 +85,6 @@ body.display-page {
     font-weight: bold;
 }
 
-.large-scripture .verse {
-    font-size: 75px;
-}
-
-.medium-scripture .verse {
-    font-size: 64px;
-}
-
-.small-scripture .verse {
-    font-size: 53px;
-}
 .words-of-christ {
     color: #c41e3a;
 }
