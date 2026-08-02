@@ -1,0 +1,383 @@
+body.display-page {
+    margin: 0;
+
+    overflow: hidden;
+
+    font-family: Georgia, "Times New Roman", serif;
+
+    color: white;
+
+    background:
+        linear-gradient(
+            rgba(0, 0, 0, .55),
+            rgba(0, 0, 0, .55)
+        ),
+        url("../images/WWBC-Church.jpg");
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    min-height: 100vh;
+}
+
+/* Fixed header */
+#header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+
+    background: white;
+
+    text-align: center;
+
+    padding: 25px;
+
+    border-bottom: 2px solid #ddd;
+
+    z-index: 100;
+}
+
+/* Scripture reference */
+#referenceText {
+    font-family: Cambria, "Times New Roman", serif;
+    font-size: 61px;
+    font-weight: bold;
+}
+
+/* Scrollable scripture area */
+#scriptureContainer {
+
+    margin-top: 90px;
+
+    height: calc(100vh - 90px);
+
+    overflow-y: auto;
+
+    padding: 45px 55px 70px 55px;
+
+    box-sizing: border-box;
+}
+
+/* Scripture text */
+#verseText {
+    font-size: 62px;
+    line-height: 1.55;
+    font-weight: normal;
+}
+
+.verse {
+    margin-bottom: 28px;
+    padding-left: 1.8em;
+    text-indent: -1.8em;
+    line-height: 1.55;
+}
+
+.verse-number {
+    display: inline-block;
+    width: 1.3em;
+    font-size: 0.42em;
+    vertical-align: super;
+    margin-right: 10px;
+    color: #666;
+    text-align: right;
+    font-weight: bold;
+}
+
+.large-scripture .verse {
+    font-size: 75px;
+}
+
+.medium-scripture .verse {
+    font-size: 64px;
+}
+
+.small-scripture .verse {
+    font-size: 53px;
+}
+.words-of-christ {
+    color: #c41e3a;
+}
+
+/* Welcome screen */
+#welcomeScreen {
+    width: 100%;
+    height: 100vh;
+    min-height: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 2vh 3vw;
+    box-sizing: border-box;
+
+    text-align: center;
+    overflow: hidden;
+}
+
+/* Welcome text area */
+#welcomeContent {
+    width: 100%;
+    max-width: 1600px;
+    height: 94vh;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+
+    margin: 0;
+
+    text-align: center;
+    text-shadow: 3px 3px 10px rgba(0, 0, 0, 0.95);
+}
+
+/* Church name — larger than before, and (being the first item in
+   a space-between layout) sits right up near the top of the screen. */
+#welcomeContent h1 {
+    margin: 0;
+
+    font-size: clamp(63px, 7.2vw, 108px);
+    line-height: 1;
+    font-weight: bold;
+    letter-spacing: 1px;
+
+    color: white;
+    white-space: nowrap;
+}
+
+/* Welcome */
+#welcomeContent h2 {
+    margin: 0;
+
+    font-size: clamp(72px, 8vw, 125px);
+    line-height: 0.95;
+    font-weight: bold;
+
+    color: white;
+}
+
+/* Sunday Worship Service */
+#welcomeContent h3 {
+    margin: 0;
+
+    font-size: clamp(66px, 5.5vw, 90px);
+    line-height: 1;
+    font-weight: bold;
+
+    color: white;
+}
+/* Date */
+#welcomeDate {
+    margin: 0;
+
+    font-size: clamp(51px, 4.6vw, 74px);
+    line-height: 1;
+    font-weight: bold;
+
+    color: white;
+}
+
+/*
+ * Countdown zone: a fixed, modest-height area reserved at the
+ * bottom of the screen at all times, whether or not a countdown
+ * is actively running. Keeping this a set size (rather than
+ * however tall the text happens to be) means the idle Welcome
+ * screen has a consistent, intentional-looking gap at the
+ * bottom instead of either a huge dead zone or everything
+ * crammed at the top.
+ */
+#countdownArea {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 1.5vh;
+}
+
+/* While idle (no countdown running), reserve only a small,
+   modest breathing-room gap at the bottom instead of the full
+   size needed once a countdown is actually shown. */
+#countdownArea:has(.countdown-slot-hidden) {
+    min-height: 6vh;
+}
+
+/* Service begins in */
+#countdownLabel {
+    margin: 0;
+
+    font-size: clamp(46px, 4.2vw, 68px);
+    line-height: 1;
+    font-weight: bold;
+
+    color: white;
+}
+
+/* Countdown */
+#countdown {
+    margin: 0;
+
+    font-size: clamp(80px, 8vw, 130px);
+    line-height: 0.9;
+    font-weight: bold;
+    letter-spacing: 4px;
+
+    /* Forces all digits to the same height/baseline AND the same
+       width, so the countdown doesn't shift or jitter left-right
+       as the digits change each second. */
+    font-variant-numeric: lining-nums tabular-nums;
+    font-feature-settings: "lnum" 1, "tnum" 1;
+
+    color: white;
+}
+
+/* Countdown row keeps its space even when not actively counting down,
+   so the rest of the welcome text doesn't spread out to fill the gap. */
+.countdown-slot-hidden {
+    visibility: hidden;
+    height: 0;
+    overflow: hidden;
+    margin: 0;
+}
+#scriptureScreen {
+    display: none;
+    min-height: 100vh;
+}
+
+/* Welcome — move up slightly */
+#welcomeContent h2 {
+    transform: translateY(-12px);
+}
+
+/* Service begins in — move down slightly */
+#countdownLabel {
+    transform: translateY(12px);
+}
+
+/* Timer — move up slightly */
+#countdown {
+    transform: translateY(-6px);
+}
+
+/* Welcome mode */
+body.welcome-mode {
+    color: white;
+
+    background:
+        linear-gradient(
+            rgba(0, 0, 0, 0.55),
+            rgba(0, 0, 0, 0.55)
+        ),
+        url("../images/WWBC-Church.jpg");
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Scripture mode */
+body.scripture-mode {
+    color: black;
+    background: white;
+}
+/*
+ * Fullscreen recovery prompt. Browsers will never let a page force
+ * itself into fullscreen without a click — that's a hard security
+ * rule, not something code can bypass. So instead of relying on
+ * someone remembering the exact keyboard shortcut, this shows one
+ * big, unmissable button whenever the page isn't already fullscreen
+ * (e.g. after a restart, or if Display was accidentally closed and
+ * reopened). Tapping it is the only step needed to recover.
+ */
+.fullscreen-prompt {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    background: rgba(0, 0, 0, 0.88);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    z-index: 9999;
+}
+
+.fullscreen-prompt-button {
+    padding: 40px 60px;
+
+    font-size: clamp(28px, 3.2vw, 46px);
+    font-weight: bold;
+
+    background: #d4af37;
+    color: #1d1a08;
+
+    border: none;
+    border-radius: 20px;
+
+    cursor: pointer;
+
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.fullscreen-prompt-button:hover {
+    background: #c49b1f;
+}
+
+/* Hymnal screen — mirrors the scripture screen's readable, high-contrast style */
+#hymnalScreen {
+    display: none;
+    min-height: 100vh;
+}
+
+#hymnalHeader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+
+    background: white;
+
+    text-align: center;
+
+    padding: 25px;
+
+    border-bottom: 2px solid #ddd;
+
+    z-index: 10;
+}
+
+#hymnalTitleText {
+    font-family: Cambria, "Times New Roman", serif;
+    font-size: 42px;
+    font-weight: bold;
+    color: black;
+}
+
+#hymnalContainer {
+    margin-top: 90px;
+
+    height: calc(100vh - 90px);
+
+    overflow-y: auto;
+
+    padding: 45px 55px 70px 55px;
+
+    box-sizing: border-box;
+
+    background: white;
+}
+
+#hymnalWordsText {
+    font-size: 52px;
+    line-height: 1.55;
+    font-weight: normal;
+    color: black;
+
+    white-space: pre-wrap;
+}
