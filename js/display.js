@@ -134,14 +134,6 @@ function loadScripture() {
         return;
     }
 
-    const LARGE_PASSAGE_LIMIT = 250;
-    const MEDIUM_PASSAGE_LIMIT = 700;
-
-    const totalCharacters = scripture.verses.reduce(
-        (total, verse) => total + verse.text.length,
-        0
-    );
-
     referenceContainer.textContent = scripture.reference;
 
     let html = "";
@@ -161,13 +153,9 @@ function loadScripture() {
         `;
     });
 
-    if (totalCharacters < LARGE_PASSAGE_LIMIT) {
-        verseContainer.className = "large-scripture";
-    } else if (totalCharacters < MEDIUM_PASSAGE_LIMIT) {
-        verseContainer.className = "medium-scripture";
-    } else {
-        verseContainer.className = "small-scripture";
-    }
+    // Font size stays constant regardless of passage length —
+    // no more auto-shrinking for longer scriptures.
+    verseContainer.className = "";
 
     verseContainer.innerHTML = html;
 
