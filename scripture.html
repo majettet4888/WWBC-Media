@@ -1,212 +1,189 @@
-document.addEventListener("DOMContentLoaded", () => {
+<!DOCTYPE html>
+<html lang="en">
 
-    const hymnNumberInput = document.getElementById("hymnNumber");
-    const lookupHymnButton = document.getElementById("lookupHymnButton");
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    const newHymnPanel = document.getElementById("newHymnPanel");
-    const hymnTitleInput = document.getElementById("hymnTitle");
-    const hymnWordsInput = document.getElementById("hymnWords");
-    const saveHymnButton = document.getElementById("saveHymnButton");
+    <title>WWBC Media Control (Build: Aug 02, 06:18 PM UTC)</title>
 
-    const hymnPreviewPanel =
-        document.getElementById("hymnPreviewPanel");
-    const hymnPreviewTitle =
-        document.getElementById("hymnPreviewTitle");
-    const hymnPreviewWords =
-        document.getElementById("hymnPreviewWords");
+    <link rel="stylesheet" href="css/style.css">
+</head>
 
-    const prepareHymnButton =
-        document.getElementById("prepareHymnButton");
-    const displayHymnButton =
-        document.getElementById("displayHymnButton");
-    const returnWelcomeHymnButton =
-        document.getElementById("returnWelcomeHymnButton");
-    const editHymnButton =
-        document.getElementById("editHymnButton");
+<body>
 
-    const hymnStatusMessage =
-        document.getElementById("hymnStatusMessage");
-    const hymnCurrentDisplayText =
-        document.getElementById("hymnCurrentDisplayText");
-    const preparedHymnText =
-        document.getElementById("preparedHymnText");
+<div class="container">
 
-    let currentHymnNumber = null;
+    <div class="content">
 
-    function getHymnalLibrary() {
-        try {
-            return JSON.parse(
-                localStorage.getItem("hymnalLibrary") || "{}"
-            );
-        } catch (error) {
-            return {};
-        }
-    }
+        <h1>WWBC Media Control</h1>
 
-    function saveHymnalLibrary(library) {
-        localStorage.setItem(
-            "hymnalLibrary",
-            JSON.stringify(library)
-        );
-    }
+        <input
+            type="text"
+            id="reference"
+            placeholder="Example: John 3:16"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+        >
 
-    function lookupHymn() {
-        const number = hymnNumberInput.value.trim();
+        <div id="bookSuggestions" class="suggestions"></div> 
 
-        if (!number) {
-            hymnStatusMessage.textContent =
-                "🔴 Enter a hymn number first.";
-            return;
-        }
+<div style="text-align:center;">
 
-        currentHymnNumber = number;
+    <div class="display-controls">
+        <select id="translation">
+            <option value="kjv" selected>KJV</option>
+            <option value="nkjv">NKJV</option>
+            <option value="niv">NIV</option>
+            <option value="esv">ESV</option>
+        </select>
 
-        const library = getHymnalLibrary();
-        const existingHymn = library[number];
+      <button id="prepareButton" type="button">
+    📖 Prepare
+</button>
 
-        if (existingHymn) {
-            showHymnPreview(number, existingHymn);
-            hymnStatusMessage.textContent =
-                "🟢 Hymn found in your library.";
-        } else {
-            newHymnPanel.style.display = "block";
-            hymnPreviewPanel.style.display = "none";
+<button id="displayNowButton" type="button">
+    ▶ Display
+</button>
 
-            hymnTitleInput.value = "";
-            hymnWordsInput.value = "";
+<button id="returnWelcomeButton" type="button">
+    Welcome
+</button>
 
-            hymnStatusMessage.textContent =
-                "🟡 New hymn — type it in once to save it.";
+</div>
 
-            hymnTitleInput.focus();
-        }
-    }
+</div>
 
-    function saveHymn() {
-        const title = hymnTitleInput.value.trim();
-        const words = hymnWordsInput.value.trim();
+<div class="countdown-controls">
+    <div class="countdown-label">Start Countdown To Service</div>
 
-        if (!title || !words) {
-            hymnStatusMessage.textContent =
-                "🔴 Enter both a title and the words before saving.";
-            return;
-        }
+    <div class="countdown-inputs">
+        <input type="number" id="countdownHours" min="0" max="23" placeholder="0" inputmode="numeric">
+        <span>hr</span>
 
-        const library = getHymnalLibrary();
+        <input type="number" id="countdownMinutes" min="0" max="59" placeholder="5" inputmode="numeric">
+        <span>min</span>
 
-        library[currentHymnNumber] = { title, words };
+        <button id="startCountdownButton" type="button">Start Countdown</button>
+        <button id="cancelCountdownButton" type="button">Cancel</button>
+    </div>
+</div>
 
-        saveHymnalLibrary(library);
+<div id="statusPanel" class="status-panel">
 
-        showHymnPreview(currentHymnNumber, { title, words });
+   <div class="status-title">System Status</div>
 
-        hymnStatusMessage.textContent =
-            "🟢 Hymn saved to your library.";
-    }
+    <div id="statusMessage">
+        🟢 Ready
+    </div>
 
-    function showHymnPreview(number, hymn) {
-        newHymnPanel.style.display = "none";
-        hymnPreviewPanel.style.display = "block";
+ <div class="now-showing-label">
+    Live Display
+</div>
 
-        hymnPreviewTitle.textContent =
-            `#${number} — ${hymn.title}`;
+<div id="currentDisplayText">
+    Welcome Screen
+</div>
 
-        hymnPreviewWords.textContent = hymn.words;
-    }
+<div id="countdownStatusRow" class="now-showing-label" style="display:none;">
+    Countdown
+</div>
 
-    function editHymn() {
-        const library = getHymnalLibrary();
-        const hymn = library[currentHymnNumber];
+<div id="countdownStatusText" style="display:none;">
+    --:--
+</div>
 
-        if (!hymn) return;
+<div class="now-showing-label">
+    Prepared Scripture
+</div>
 
-        newHymnPanel.style.display = "block";
-        hymnPreviewPanel.style.display = "none";
+<div id="preparedScriptureText">
+    None
+</div>
 
-        hymnTitleInput.value = hymn.title;
-        hymnWordsInput.value = hymn.words;
+<div id="preparedScripturePreview" class="prepared-preview">
+    No scripture prepared.
+</div>
 
-        hymnStatusMessage.textContent =
-            "🟡 Editing hymn — save to update your library.";
-    }
+<div class="display-connection">
+    External Display(s) Connected:
+    <span
+        id="displayConnectionDot"
+        class="connection-dot disconnected"
+        title="No external display detected"
+    ></span>
+</div>
 
-    function prepareHymn() {
-        const library = getHymnalLibrary();
-        const hymn = library[currentHymnNumber];
+</div>
 
-        if (!hymn) {
-            hymnStatusMessage.textContent =
-                "🔴 Look up or save a hymn first.";
-            return;
-        }
+</div>
 
-        const preparedHymnData = {
-            number: currentHymnNumber,
-            title: hymn.title,
-            words: hymn.words
-        };
+<div class="bottom-actions">
 
-        localStorage.setItem(
-            "preparedHymnData",
-            JSON.stringify(preparedHymnData)
-        );
+    <button id="browseBibleButton" type="button">
+        📖 Browse Bible
+    </button>
 
-        preparedHymnText.textContent =
-            `#${currentHymnNumber} — ${hymn.title}`;
+    <button id="homeButton" onclick="location.href='index.html'">
+        ⬅ Home
+    </button>
 
-        hymnStatusMessage.textContent = "🟢 Hymn Prepared";
-    }
+    <button id="newServiceButton" type="button">
+        New Service
+    </button>
 
-    function displayHymn() {
-        const preparedHymnData =
-            localStorage.getItem("preparedHymnData");
+    <div id="browseBibleOverlay" class="browse-overlay" style="display:none;">
+        <div class="browse-box">
+            <div class="browse-header">
+                <button id="browseBackButton" type="button" class="browse-nav-button" style="visibility:hidden;">
+                    &larr; Back
+                </button>
 
-        if (!preparedHymnData) {
-            hymnStatusMessage.textContent =
-                "🔴 Prepare a hymn first.";
-            return;
-        }
+                <div id="browseTitle" class="browse-title">Select a Book</div>
 
-        localStorage.setItem("displayedHymnData", preparedHymnData);
-        localStorage.setItem("displayMode", "hymnal");
-        localStorage.setItem(
-            "hymnalUpdated",
-            Date.now().toString()
-        );
+                <button id="browseCloseButton" type="button" class="browse-nav-button">
+                    Close &times;
+                </button>
+            </div>
 
-        const hymn = JSON.parse(preparedHymnData);
+            <div id="browseRangeRow" class="browse-range-row" style="display:none;">
+                <span>Range:</span>
+                <input type="number" id="browseRangeStart" min="1" placeholder="Start">
+                <span>to</span>
+                <input type="number" id="browseRangeEnd" min="1" placeholder="End">
+                <button id="browseUseRangeButton" type="button">Use Range</button>
+            </div>
 
-        hymnCurrentDisplayText.textContent =
-            `#${hymn.number} — ${hymn.title}`;
+            <div id="browseRangeError" class="browse-range-error" style="display:none;"></div>
 
-        hymnStatusMessage.textContent = "🟢 Hymn Displayed";
-    }
+            <div id="browseGrid" class="browse-grid"></div>
+        </div>
+    </div>
 
-    function returnWelcome() {
-        localStorage.setItem("displayMode", "welcome");
+    <div id="newServiceConfirmOverlay" class="confirm-overlay" style="display:none;">
+        <div class="confirm-box">
+            <div class="confirm-message">
+                Start a new service?<br>
+                This clears the prepared and displayed scripture, and
+                returns the TVs to the Welcome screen. This cannot be undone.
+            </div>
 
-        hymnCurrentDisplayText.textContent = "Welcome Screen";
-        hymnStatusMessage.textContent =
-            "🟢 Welcome Screen Displayed";
-    }
+            <div class="confirm-buttons">
+                <button id="confirmNewServiceYes" type="button">Yes, Start New Service</button>
+                <button id="confirmNewServiceCancel" type="button">Cancel</button>
+            </div>
+        </div>
+    </div>
 
-    lookupHymnButton.addEventListener("click", lookupHymn);
+</div>
 
-    hymnNumberInput.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            lookupHymn();
-        }
-    });
+    </div>
 
-    saveHymnButton.addEventListener("click", saveHymn);
-    editHymnButton.addEventListener("click", editHymn);
-    prepareHymnButton.addEventListener("click", prepareHymn);
-    displayHymnButton.addEventListener("click", displayHymn);
-    returnWelcomeHymnButton.addEventListener(
-        "click",
-        returnWelcome
-    );
+</div>
+<script src="api/bible.js"></script>
+<script src="js/app.js"></script>
+</body>
 
-    hymnNumberInput.focus();
-});
+</html>

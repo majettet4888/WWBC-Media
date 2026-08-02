@@ -1,1106 +1,132 @@
-document.addEventListener("DOMContentLoaded", () => {
-    const prepareButton = document.getElementById("prepareButton");
-    const displayNowButton = document.getElementById("displayNowButton");
-    const returnWelcomeButton =
-        document.getElementById("returnWelcomeButton");
-
-    const newServiceButton =
-    document.getElementById("newServiceButton");
-
-    const newServiceConfirmOverlay =
-        document.getElementById("newServiceConfirmOverlay");
-    const confirmNewServiceYes =
-        document.getElementById("confirmNewServiceYes");
-    const confirmNewServiceCancel =
-        document.getElementById("confirmNewServiceCancel");
-
-    const referenceInput = document.getElementById("reference");
-    const translationSelect = document.getElementById("translation");
-    const suggestionsBox = document.getElementById("bookSuggestions");
-
-    const statusMessage = document.getElementById("statusMessage");
-    const currentDisplayText =
-        document.getElementById("currentDisplayText");
-    const preparedScriptureText =
-        document.getElementById("preparedScriptureText");
-    
-    const displayConnectionDot =
-    document.getElementById("displayConnectionDot");
-
-    const preparedScripturePreview =
-    document.getElementById("preparedScripturePreview");
-
-    const countdownHoursInput =
-        document.getElementById("countdownHours");
-    const countdownMinutesInput =
-        document.getElementById("countdownMinutes");
-    const startCountdownButton =
-        document.getElementById("startCountdownButton");
-    const cancelCountdownButton =
-        document.getElementById("cancelCountdownButton");
-    const countdownStatusRow =
-        document.getElementById("countdownStatusRow");
-    const countdownStatusText =
-        document.getElementById("countdownStatusText");
-
-    const browseBibleButton =
-        document.getElementById("browseBibleButton");
-    const browseBibleOverlay =
-        document.getElementById("browseBibleOverlay");
-    const browseTitle =
-        document.getElementById("browseTitle");
-    const browseGrid =
-        document.getElementById("browseGrid");
-    const browseBackButton =
-        document.getElementById("browseBackButton");
-    const browseCloseButton =
-        document.getElementById("browseCloseButton");
-
-    const browseRangeRow =
-        document.getElementById("browseRangeRow");
-    const browseRangeStart =
-        document.getElementById("browseRangeStart");
-    const browseRangeEnd =
-        document.getElementById("browseRangeEnd");
-    const browseUseRangeButton =
-        document.getElementById("browseUseRangeButton");
-    const browseRangeError =
-        document.getElementById("browseRangeError");
-
-   
-    const bibleBooks = [
-        "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy",
-        "Joshua", "Judges", "Ruth",
-        "1 Samuel", "2 Samuel",
-        "1 Kings", "2 Kings",
-        "1 Chronicles", "2 Chronicles",
-        "Ezra", "Nehemiah", "Esther", "Job",
-        "Psalm", "Proverbs", "Ecclesiastes", "Song of Solomon",
-        "Isaiah", "Jeremiah", "Lamentations", "Ezekiel", "Daniel",
-        "Hosea", "Joel", "Amos", "Obadiah", "Jonah", "Micah",
-        "Nahum", "Habakkuk", "Zephaniah", "Haggai",
-        "Zechariah", "Malachi",
-        "Matthew", "Mark", "Luke", "John", "Acts",
-        "Romans",
-        "1 Corinthians", "2 Corinthians",
-        "Galatians", "Ephesians", "Philippians", "Colossians",
-        "1 Thessalonians", "2 Thessalonians",
-        "1 Timothy", "2 Timothy",
-        "Titus", "Philemon", "Hebrews", "James",
-        "1 Peter", "2 Peter",
-        "1 John", "2 John", "3 John",
-        "Jude", "Revelation"
-    ];
-
-
-    let selectedSuggestion = -1;
-    let currentMatches = [];
-
-    function focusReferenceInput() {
-        referenceInput.focus();
-        referenceInput.select();
-    }
-
-    function getSelectedTranslation() {
-        return translationSelect?.value?.toUpperCase() || "KJV";
-    }
-
-    function getScripturePreview(scripture) {
-    if (
-        !scripture ||
-        !Array.isArray(scripture.verses) ||
-        scripture.verses.length === 0
-    ) {
-        return "No scripture prepared.";
-    }
-
-    const firstVerse = scripture.verses[0];
-
-    const previewText =
-        `${firstVerse.verse}. ${firstVerse.text}`.trim();
-
-    const previewLimit = 160;
-
-    if (previewText.length > previewLimit) {
-        return `${previewText.slice(0, previewLimit).trim()}...`;
-    }
-
-    return previewText;
-}
-
-    function renderCountdownStatus() {
-        const active =
-            localStorage.getItem("countdownActive") === "true";
-
-        const endTime =
-            Number(localStorage.getItem("countdownEndTime"));
-
-        if (!active || !endTime) {
-            countdownStatusRow.style.display = "none";
-            countdownStatusText.style.display = "none";
-            return;
-        }
-
-        const remainingMs = endTime - Date.now();
-
-        if (remainingMs <= 0) {
-            countdownStatusRow.style.display = "none";
-            countdownStatusText.style.display = "none";
-            return;
-        }
-
-        countdownStatusRow.style.display = "block";
-        countdownStatusText.style.display = "block";
-
-        countdownStatusText.textContent =
-            formatDuration(remainingMs);
-    }
-
-    function formatDuration(ms) {
-        const totalSeconds = Math.max(
-            0,
-            Math.floor(ms / 1000)
-        );
-
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-
-        if (hours > 0) {
-            return (
-                `${hours}:` +
-                `${String(minutes).padStart(2, "0")}:` +
-                `${String(seconds).padStart(2, "0")}`
-            );
-        }
-
-        return (
-            `${minutes}:` +
-            `${String(seconds).padStart(2, "0")}`
-        );
-    }
-
-    function startCountdown() {
-        const preparedScriptureData =
-            localStorage.getItem("preparedScriptureData");
-
-        if (!preparedScriptureData) {
-            statusMessage.textContent =
-                "🔴 Prepare a scripture first — the countdown needs " +
-                "something to switch to when it ends.";
-            return;
-        }
-
-        const hours =
-            Number(countdownHoursInput.value) || 0;
-        const minutes =
-            Number(countdownMinutesInput.value) || 0;
-
-        const totalMs = ((hours * 60) + minutes) * 60 * 1000;
-
-        if (totalMs <= 0) {
-            statusMessage.textContent =
-                "🔴 Enter a countdown time (hours and/or minutes).";
-            return;
-        }
-
-        const endTime = Date.now() + totalMs;
-
-        localStorage.setItem(
-            "countdownEndTime",
-            endTime.toString()
-        );
-
-        localStorage.setItem("countdownActive", "true");
-
-        // Countdown always runs on the Welcome screen.
-        localStorage.setItem("displayMode", "welcome");
-        currentDisplayText.textContent = "Welcome Screen";
-
-        statusMessage.textContent =
-            "🟢 Countdown started — " +
-            formatDuration(totalMs) +
-            " until service.";
-
-        renderCountdownStatus();
-        focusReferenceInput();
-    }
-
-    function cancelCountdown() {
-        localStorage.removeItem("countdownEndTime");
-        localStorage.setItem("countdownActive", "false");
-
-        renderCountdownStatus();
-    }
-
-    /*
-     * Browse Bible: tap a book, then a chapter, then a verse.
-     * No typing required. Selecting a verse auto-prepares that
-     * reference — Display, Start Countdown, and Welcome all still
-     * work exactly as they do after typing + Prepare manually.
-     */
-    const browseState = {
-        step: "book",
-        book: null,
-        chapter: null,
-        pendingReference: null
-    };
-
-    function openBrowseBible() {
-        browseState.step = "book";
-        browseState.book = null;
-        browseState.chapter = null;
-        browseState.pendingReference = null;
-
-        renderBrowseStep();
-
-        browseBibleOverlay.style.display = "flex";
-    }
-
-    function closeBrowseBible() {
-        browseBibleOverlay.style.display = "none";
-    }
-
-    function browseGoBack() {
-        if (browseState.step === "confirm") {
-            browseState.step = "verse";
-        } else if (browseState.step === "verse") {
-            browseState.step = "chapter";
-        } else if (browseState.step === "chapter") {
-            browseState.step = "book";
-        }
-
-        renderBrowseStep();
-    }
-
-    async function renderBrowseStep() {
-        browseGrid.innerHTML =
-            "<div style='padding:20px;color:#888;'>Loading…</div>";
-
-        browseBackButton.style.visibility =
-            browseState.step === "book" ? "hidden" : "visible";
-
-        browseRangeRow.style.display = "none";
-
-        if (browseState.step === "book") {
-            browseTitle.textContent = "Select a Book";
-            renderBookGrid();
-            return;
-        }
-
-        if (browseState.step === "chapter") {
-            browseTitle.textContent = `${browseState.book} — Select a Chapter`;
-
-            const chapterCount =
-                await getChapterCount(browseState.book);
-
-            renderNumberGrid(chapterCount, (chapterNumber) => {
-                browseState.chapter = chapterNumber;
-                browseState.step = "verse";
-                renderBrowseStep();
-            });
-
-            return;
-        }
-
-        if (browseState.step === "verse") {
-            browseTitle.textContent =
-                `${browseState.book} ${browseState.chapter} — Select a Verse`;
-
-            const verseCount = await getVerseCount(
-                browseState.book,
-                browseState.chapter
-            );
-
-            browseRangeRow.style.display = "flex";
-            browseRangeError.style.display = "none";
-            browseRangeError.textContent = "";
-            browseRangeStart.min = "1";
-            browseRangeStart.max = verseCount.toString();
-            browseRangeEnd.min = "1";
-            browseRangeEnd.max = verseCount.toString();
-            browseRangeStart.value = "";
-            browseRangeEnd.value = "";
-
-            renderNumberGrid(verseCount, (verseNumber) => {
-                selectBrowsedVerse(verseNumber);
-            });
-
-            return;
-        }
-
-        if (browseState.step === "confirm") {
-            browseTitle.textContent = "Confirm Your Selection";
-
-            browseGrid.className = "browse-scroll-container";
-            browseGrid.innerHTML = "";
-
-            const referenceHeading = document.createElement("div");
-            referenceHeading.className = "browse-confirm-reference";
-            referenceHeading.textContent = browseState.pendingReference;
-            browseGrid.appendChild(referenceHeading);
-
-            const previewBox = document.createElement("div");
-            previewBox.className = "browse-confirm-preview";
-            previewBox.textContent = "Loading preview…";
-            browseGrid.appendChild(previewBox);
-
-            const useButton = document.createElement("button");
-            useButton.type = "button";
-            useButton.className = "browse-confirm-use-button";
-            useButton.textContent = "✅ Use This Reference";
-            useButton.addEventListener("click", confirmBrowsedSelection);
-            browseGrid.appendChild(useButton);
-
-            try {
-                const scripture = await getScripture(
-                    browseState.pendingReference
-                );
-
-                previewBox.textContent = getScripturePreview(scripture);
-            } catch (error) {
-                previewBox.textContent =
-                    "Unable to load a preview, but you can still use this reference.";
-            }
-        }
-    }
-
-    const SEED_FREQUENTLY_USED_BOOKS = [
-        "Genesis", "Psalms", "Proverbs", "Isaiah",
-        "Matthew", "Mark", "Luke", "John",
-        "Acts", "Romans"
-    ];
-
-    const OLD_TESTAMENT_COUNT = 39;
-    const FREQUENTLY_USED_LIMIT = 10;
-
-    function extractBookName(reference) {
-        const match = reference.match(
-            /^(.*)\s+\d+(?::\d+(?:-\d+)?)?$/
-        );
-
-        return match ? match[1] : reference;
-    }
-
-    function getBookUsageCounts() {
-        let counts;
-
-        try {
-            counts = JSON.parse(
-                localStorage.getItem("bookUsageCounts") || "null"
-            );
-        } catch (error) {
-            counts = null;
-        }
-
-        if (!counts) {
-            counts = {};
-
-            SEED_FREQUENTLY_USED_BOOKS.forEach((bookName) => {
-                counts[bookName] = 1;
-            });
-
-            localStorage.setItem(
-                "bookUsageCounts",
-                JSON.stringify(counts)
-            );
-        }
-
-        return counts;
-    }
-
-    function incrementBookUsage(reference) {
-        if (!reference) return;
-
-        const bookName = extractBookName(reference);
-        const counts = getBookUsageCounts();
-
-        counts[bookName] = (counts[bookName] || 0) + 1;
-
-        localStorage.setItem(
-            "bookUsageCounts",
-            JSON.stringify(counts)
-        );
-    }
-
-    function getFrequentlyUsedBooks() {
-        const counts = getBookUsageCounts();
-
-        return Object.keys(counts)
-            .sort((a, b) => counts[b] - counts[a])
-            .slice(0, FREQUENTLY_USED_LIMIT);
-    }
-
-    function renderBookGrid() {
-        browseGrid.className = "browse-scroll-container";
-        browseGrid.innerHTML = "";
-
-        const oldTestamentBooks = books.slice(0, OLD_TESTAMENT_COUNT);
-        const newTestamentBooks = books.slice(OLD_TESTAMENT_COUNT);
-
-        appendBookSection(
-            "Frequently Used",
-            getFrequentlyUsedBooks(),
-            "frequently-used-grid"
-        );
-
-        appendBookSection("Old Testament", oldTestamentBooks, "book-grid");
-        appendBookSection("New Testament", newTestamentBooks, "book-grid");
-    }
-
-    function appendBookSection(title, bookNames, gridClass) {
-        const heading = document.createElement("div");
-        heading.className = "browse-section-title";
-        heading.textContent = title;
-        browseGrid.appendChild(heading);
-
-        const grid = document.createElement("div");
-        grid.className = gridClass;
-
-        bookNames.forEach((bookName) => {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.textContent = bookName;
-
-            button.addEventListener("click", () => {
-                browseState.book = bookName;
-                browseState.step = "chapter";
-                renderBrowseStep();
-            });
-
-            grid.appendChild(button);
-        });
-
-        browseGrid.appendChild(grid);
-    }
-
-    function renderNumberGrid(count, onSelect) {
-        browseGrid.className = "browse-grid numbers-grid";
-        browseGrid.innerHTML = "";
-
-        for (let number = 1; number <= count; number++) {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.textContent = number.toString();
-
-            button.addEventListener("click", () => onSelect(number));
-
-            browseGrid.appendChild(button);
-        }
-    }
-
-    function selectBrowsedVerse(verseNumber) {
-        browseState.pendingReference =
-            `${browseState.book} ${browseState.chapter}:${verseNumber}`;
-
-        browseState.step = "confirm";
-        renderBrowseStep();
-    }
-
-    function selectBrowsedRange() {
-        const start = Number(browseRangeStart.value);
-        const end = Number(browseRangeEnd.value);
-        const maxVerse = Number(browseRangeEnd.max) || 999;
-
-        if (!start || !end) {
-            browseRangeError.textContent =
-                "Enter both a start and end verse for the range.";
-            browseRangeError.style.display = "block";
-            return;
-        }
-
-        if (start > end) {
-            browseRangeError.textContent =
-                "Start verse must come before the end verse.";
-            browseRangeError.style.display = "block";
-            return;
-        }
-
-        if (start < 1 || end > maxVerse) {
-            browseRangeError.textContent =
-                `${browseState.book} ${browseState.chapter} only has ` +
-                `${maxVerse} verses.`;
-            browseRangeError.style.display = "block";
-            return;
-        }
-
-        browseRangeError.style.display = "none";
-
-        browseState.pendingReference = start === end
-            ? `${browseState.book} ${browseState.chapter}:${start}`
-            : `${browseState.book} ${browseState.chapter}:${start}-${end}`;
-
-        browseState.step = "confirm";
-        renderBrowseStep();
-    }
-
-    function confirmBrowsedSelection() {
-        referenceInput.value = browseState.pendingReference;
-
-        closeBrowseBible();
-
-        statusMessage.textContent =
-            "🟡 Reference selected — click Prepare to continue.";
-
-        prepareButton.focus();
-    }
-
-    function updateInitialStatus() {
-        const displayMode =
-            localStorage.getItem("displayMode") || "welcome";
-
-        const preparedReference =
-            localStorage.getItem("preparedReference");
-
-        const preparedTranslation =
-            localStorage.getItem("preparedTranslation");
-
-        const displayedReference =
-            localStorage.getItem("displayedReference");
-
-        const displayedTranslation =
-            localStorage.getItem("displayedTranslation");
-
-        if (displayMode === "scripture" && displayedReference) {
-            currentDisplayText.textContent =
-                `${displayedReference} (${displayedTranslation || "KJV"})`;
-        } else if (displayMode === "hymnal") {
-            const displayedHymnData =
-                localStorage.getItem("displayedHymnData");
-
-            if (displayedHymnData) {
-                try {
-                    const hymn = JSON.parse(displayedHymnData);
-                    currentDisplayText.textContent =
-                        `Hymn: ${hymn.title || hymn.number}`;
-                } catch (error) {
-                    currentDisplayText.textContent = "Hymn Displayed";
-                }
-            } else {
-                currentDisplayText.textContent = "Hymn Displayed";
-            }
-        } else {
-            currentDisplayText.textContent = "Welcome Screen";
-        }
-
-        if (preparedReference) {
-            preparedScriptureText.textContent =
-                `${preparedReference} (${preparedTranslation || "KJV"})`;
-        } else {
-            preparedScriptureText.textContent = "None";
-        }
-    }
-
-    async function prepareScripture() {
-        const reference = referenceInput.value.trim();
-        const translation = getSelectedTranslation();
-
-        if (reference === "") {
-            statusMessage.textContent =
-                "🔴 Please enter a Bible reference.";
-
-            referenceInput.focus();
-            return;
-        }
-
-        statusMessage.textContent = "🟡 Preparing Scripture...";
-        prepareButton.disabled = true;
-        displayNowButton.disabled = true;
-
-        try {
-            const scripture = await getScripture(reference);
-
-            localStorage.setItem(
-                "preparedScriptureData",
-                JSON.stringify(scripture)
-            );
-
-            localStorage.setItem(
-                "preparedReference",
-                scripture.reference
-            );
-
-            localStorage.setItem(
-                "preparedTranslation",
-                translation
-            );
-
-         preparedScriptureText.textContent =
-    `${scripture.reference} (${translation})`;
-
-preparedScripturePreview.textContent =
-    getScripturePreview(scripture);
-
-    preparedScripturePreview.style.display = "block";
-
-statusMessage.textContent = "🟢 Scripture Prepared";
-displayNowButton.disabled = false;
-
-        } catch (error) {
-            console.error(error);
-
-            const errorMessage =
-                error?.message || "Unable to retrieve Scripture.";
-
-            if (
-                errorMessage.toLowerCase().includes("not found") ||
-                errorMessage.toLowerCase().includes("invalid")
-            ) {
-                statusMessage.textContent =
-                    "🔴 Scripture Not Found — check the reference.";
-            } else {
-                statusMessage.textContent =
-                    "🔴 Unable to retrieve Scripture.";
-            }
-      } finally {
-    prepareButton.disabled = false;
-    focusReferenceInput();
-}
-    }
-
-    function displayPreparedScripture() {
-
-        // Clicking Display always bypasses the countdown immediately,
-        // so stop it here too — same as the Welcome button — to avoid
-        // a leftover countdown still ticking on screen after the fact.
-        cancelCountdown();
-
-        const preparedScriptureData =
-            localStorage.getItem("preparedScriptureData");
-
-        const preparedReference =
-            localStorage.getItem("preparedReference");
-
-        const preparedTranslation =
-            localStorage.getItem("preparedTranslation") || "KJV";
-
-        if (!preparedScriptureData || !preparedReference) {
-            statusMessage.textContent =
-                "🔴 Prepare a scripture first.";
-
-            referenceInput.focus();
-            return;
-        }
-
-        localStorage.setItem(
-            "scriptureData",
-            preparedScriptureData
-        );
-
-        localStorage.setItem(
-            "referenceText",
-            preparedReference
-        );
-
-        localStorage.setItem(
-            "selectedTranslation",
-            preparedTranslation
-        );
-
-        localStorage.setItem(
-            "displayedReference",
-            preparedReference
-        );
-
-        localStorage.setItem(
-            "displayedTranslation",
-            preparedTranslation
-        );
-
-        // Count this as real usage for the Frequently Used shortcuts.
-        incrementBookUsage(preparedReference);
-
-        /*
-         * Tell the display page to load the prepared scripture,
-         * then switch from Welcome Mode to Scripture Mode.
-         */
-        localStorage.setItem(
-            "scriptureUpdated",
-            Date.now().toString()
-        );
-
-        localStorage.setItem(
-            "displayMode",
-            "scripture"
-        );
-
-        currentDisplayText.textContent =
-            `${preparedReference} (${preparedTranslation})`;
-
-statusMessage.textContent = "🟢 Scripture Displayed";
-
-localStorage.removeItem("preparedScriptureData");
-localStorage.removeItem("preparedReference");
-localStorage.removeItem("preparedTranslation");
-
-referenceInput.value = "";
-
-preparedScriptureText.textContent = "None";
-preparedScripturePreview.textContent = "";
-preparedScripturePreview.style.display = "none";
-
-displayNowButton.disabled = true;
-
-focusReferenceInput();
-}
-
-focusReferenceInput();
-
- function returnToWelcome() {
-
-    // Manually returning to Welcome cancels any running countdown.
-    cancelCountdown();
-
-    localStorage.setItem("displayMode", "welcome");
-
-    currentDisplayText.textContent = "Welcome Screen";
-    statusMessage.textContent = "🟢 Welcome Screen Displayed";
-
-    focusReferenceInput();
-}
-
-    prepareButton.addEventListener(
-        "click",
-        prepareScripture
-    );
-
-    displayNowButton.addEventListener(
-        "click",
-        displayPreparedScripture
-    );
-
-    returnWelcomeButton.addEventListener(
-        "click",
-        returnToWelcome
-    );
-
-    browseBibleButton.addEventListener(
-        "click",
-        openBrowseBible
-    );
-
-    browseBackButton.addEventListener(
-        "click",
-        browseGoBack
-    );
-
-    browseCloseButton.addEventListener(
-        "click",
-        closeBrowseBible
-    );
-
-    browseUseRangeButton.addEventListener(
-        "click",
-        selectBrowsedRange
-    );
-
-    startCountdownButton.addEventListener(
-        "click",
-        startCountdown
-    );
-
-    cancelCountdownButton.addEventListener(
-        "click",
-        cancelCountdown
-    );
-
-    newServiceButton.addEventListener(
-    "click",
-    () => {
-        newServiceConfirmOverlay.style.display = "flex";
-    }
-);
-
-    confirmNewServiceCancel.addEventListener(
-        "click",
-        () => {
-            newServiceConfirmOverlay.style.display = "none";
-        }
-    );
-
-    confirmNewServiceYes.addEventListener(
-        "click",
-        () => {
-            newServiceConfirmOverlay.style.display = "none";
-            newService();
-        }
-    );
-
-    function newService() {
-
-    localStorage.removeItem("preparedScriptureData");
-    localStorage.removeItem("preparedReference");
-    localStorage.removeItem("preparedTranslation");
-
-    localStorage.removeItem("displayedReference");
-    localStorage.removeItem("displayedTranslation");
-
-    localStorage.removeItem("scriptureData");
-    localStorage.removeItem("referenceText");
-    localStorage.removeItem("selectedTranslation");
-
-    localStorage.setItem("displayMode", "welcome");
-    localStorage.setItem("serviceStarted", "false");
-
-    localStorage.removeItem("countdownEndTime");
-    localStorage.setItem("countdownActive", "false");
-
-    countdownHoursInput.value = "";
-    countdownMinutesInput.value = "";
-
-    localStorage.setItem(
-        "scriptureUpdated",
-        Date.now().toString()
-    );
-
-    currentDisplayText.textContent = "Welcome Screen";
-
-    preparedScriptureText.textContent = "None";
-    preparedScripturePreview.textContent = "";
-    preparedScripturePreview.style.display = "none";
-
-    renderCountdownStatus();
-
-    statusMessage.textContent = "🟢 Ready";
-
-    displayNowButton.disabled = true;
-
-    referenceInput.value = "";
-
-    focusReferenceInput();
-}
-
-    /*
-     * Pressing Enter prepares the scripture.
-     * It does not change what appears on the TVs.
-     */
-    referenceInput.addEventListener("keydown", (event) => {
-        if (
-            event.key === "Enter" &&
-            suggestionsBox.style.display !== "block"
-        ) {
-            event.preventDefault();
-            prepareButton.click();
-        }
-    });
-
-    referenceInput.addEventListener("input", () => {
-        localStorage.removeItem("preparedScriptureData");
-localStorage.removeItem("preparedReference");
-localStorage.removeItem("preparedTranslation");
-
-preparedScriptureText.textContent = "None";
-preparedScripturePreview.textContent = "";
-preparedScripturePreview.style.display = "none";
-displayNowButton.disabled = true;
-
-const value =
-    referenceInput.value.trim().toLowerCase();
-
-if (value === "") {
-    statusMessage.textContent = "🟢 Ready";
-} else {
-    statusMessage.textContent = "🟡 Waiting to Prepare";
-}
-
-        suggestionsBox.innerHTML = "";
-        selectedSuggestion = -1;
-
-        if (value.length < 2) {
-            suggestionsBox.style.display = "none";
-            return;
-        }
-
-        currentMatches = bibleBooks.filter((book) =>
-            book.toLowerCase().startsWith(value)
-        );
-
-        if (currentMatches.length === 0) {
-            suggestionsBox.style.display = "none";
-            return;
-        }
-
-        currentMatches.forEach((book, index) => {
-            const item = document.createElement("div");
-
-            item.className = "suggestion-item";
-            item.textContent = book;
-
-            if (index === 0) {
-                item.style.backgroundColor = "#e9f2ff";
-                selectedSuggestion = 0;
-            }
-
-            item.addEventListener("click", () => {
-                referenceInput.value = `${book} `;
-
-                suggestionsBox.style.display = "none";
-                referenceInput.focus();
-            });
-
-            suggestionsBox.appendChild(item);
-        });
-
-        suggestionsBox.style.display = "block";
-    });
-
-    referenceInput.addEventListener("keydown", (event) => {
-        const items =
-            suggestionsBox.querySelectorAll(".suggestion-item");
-
-        if (
-            suggestionsBox.style.display !== "block" ||
-            items.length === 0
-        ) {
-            return;
-        }
-
-        if (event.key === "ArrowDown") {
-            event.preventDefault();
-
-            selectedSuggestion++;
-
-            if (selectedSuggestion >= items.length) {
-                selectedSuggestion = 0;
-            }
-
-        } else if (event.key === "ArrowUp") {
-            event.preventDefault();
-
-            selectedSuggestion--;
-
-            if (selectedSuggestion < 0) {
-                selectedSuggestion = items.length - 1;
-            }
-
-        } else if (event.key === "Enter") {
-            event.preventDefault();
-
-            if (selectedSuggestion >= 0) {
-                items[selectedSuggestion].click();
-            }
-
-            return;
-
-        } else if (event.key === "Escape") {
-            suggestionsBox.style.display = "none";
-            return;
-        }
-
-        items.forEach((item, index) => {
-            item.style.backgroundColor =
-                index === selectedSuggestion
-                    ? "#e9f2ff"
-                    : "";
-        });
-    });
-
-displayNowButton.disabled = true;
-
-// Clear previous session
-localStorage.removeItem("preparedScriptureData");
-localStorage.removeItem("preparedReference");
-localStorage.removeItem("preparedTranslation");
-
-localStorage.removeItem("displayedReference");
-localStorage.removeItem("displayedTranslation");
-
-// NEW
-localStorage.removeItem("scriptureData");
-localStorage.removeItem("referenceText");
-localStorage.removeItem("selectedTranslation");
-
-localStorage.setItem("displayMode", "welcome");
-localStorage.setItem("serviceStarted", "false");
-
-console.log("Startup cleanup finished");
-
-function updateDisplayConnectionStatus() {
-    const externalDisplayConnected =
-        window.screen.isExtended === true;
-
-    displayConnectionDot.classList.toggle(
-        "connected",
-        externalDisplayConnected
-    );
-
-    displayConnectionDot.classList.toggle(
-        "disconnected",
-        !externalDisplayConnected
-    );
-
-    displayConnectionDot.title = externalDisplayConnected
-        ? "External display detected"
-        : "No external display detected";
-}
-
-updateDisplayConnectionStatus();
-
-window.addEventListener(
-    "resize",
-    updateDisplayConnectionStatus
-);
-
-updateInitialStatus();
-renderCountdownStatus();
-
-/*
- * The countdown itself runs on the Display page (display.js),
- * since that's the tab that's guaranteed to stay open on the
- * TVs. When it finishes, it writes the new displayMode/
- * preparedScripture state to localStorage. This listener keeps
- * the control page's status panel in sync with whatever the
- * Display page (or another open control tab) just did.
- */
-window.addEventListener("storage", (event) => {
-    if (
-        event.key === "countdownActive" ||
-        event.key === "countdownEndTime"
-    ) {
-        renderCountdownStatus();
-    }
-
-    if (
-        event.key === "displayMode" ||
-        event.key === "displayedReference" ||
-        event.key === "displayedTranslation"
-    ) {
-        updateInitialStatus();
-    }
-
-    if (
-        event.key === "preparedReference" ||
-        event.key === "preparedTranslation"
-    ) {
-        const preparedReference =
-            localStorage.getItem("preparedReference");
-
-        const preparedTranslation =
-            localStorage.getItem("preparedTranslation");
-
-        if (preparedReference) {
-            preparedScriptureText.textContent =
-                `${preparedReference} (${preparedTranslation || "KJV"})`;
-        } else {
-            preparedScriptureText.textContent = "None";
-        }
-    }
-});
-
-setInterval(renderCountdownStatus, 1000);
-
-preparedScriptureText.textContent = "None";
-preparedScripturePreview.textContent = "";
-preparedScripturePreview.style.display = "none";
-displayNowButton.disabled = true;
-
-window.addEventListener("focus", () => {
-    setTimeout(() => {
-        referenceInput.focus();
-    }, 100);
-});
-
-setTimeout(() => {
-    referenceInput.focus();
-}, 200);
-});
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>WWBC Hymnal Control</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/hymnal.css">
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="content">
+
+        <h1>WWBC Hymnal Control</h1>
+
+        <input
+            type="number"
+            id="hymnNumber"
+            placeholder="Example: 23"
+            autocomplete="off"
+            inputmode="numeric"
+            min="1"
+        >
+
+        <div style="text-align:center;">
+            <button id="lookupHymnButton" type="button">
+                🔎 Look Up
+            </button>
+        </div>
+
+        <!-- Shown when the hymn number isn't in the library yet -->
+        <div id="newHymnPanel" class="new-hymn-panel" style="display:none;">
+
+            <div class="new-hymn-label">
+                This hymn isn't saved yet — type it in once, and it'll be ready every time after.
+            </div>
+
+            <input
+                type="text"
+                id="hymnTitle"
+                placeholder="Hymn title"
+                autocomplete="off"
+            >
+
+            <textarea
+                id="hymnWords"
+                placeholder="Type the hymn's words here, from your own physical hymnal. Use a blank line between verses/chorus."
+                rows="10"
+            ></textarea>
+
+            <div style="text-align:center;">
+                <button id="saveHymnButton" type="button">
+                    💾 Save to Hymnal Library
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Shown once a hymn is loaded (new or existing) -->
+        <div id="hymnPreviewPanel" class="new-hymn-panel" style="display:none;">
+
+            <div id="hymnPreviewTitle" class="hymn-preview-title"></div>
+            <div id="hymnPreviewWords" class="hymn-preview-words"></div>
+
+            <div class="display-controls">
+                <button id="prepareHymnButton" type="button">
+                    📖 Prepare
+                </button>
+
+                <button id="displayHymnButton" type="button">
+                    ▶ Display
+                </button>
+
+                <button id="returnWelcomeHymnButton" type="button">
+                    Welcome
+                </button>
+
+                <button id="editHymnButton" type="button">
+                    ✏ Edit
+                </button>
+            </div>
+
+        </div>
+
+        <div id="hymnStatusPanel" class="status-panel">
+
+            <div class="status-title">System Status</div>
+
+            <div id="hymnStatusMessage">
+                🟢 Ready
+            </div>
+
+            <div class="now-showing-label">
+                Live Display
+            </div>
+
+            <div id="hymnCurrentDisplayText">
+                Welcome Screen
+            </div>
+
+            <div class="now-showing-label">
+                Prepared Hymn
+            </div>
+
+            <div id="preparedHymnText">
+                None
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="bottom-actions">
+
+        <button id="hymnHomeButton" onclick="location.href='index.html'">
+            ⬅ Home
+        </button>
+
+    </div>
+
+</div>
+
+<script src="js/hymnal.js"></script>
+</body>
+
+</html>
