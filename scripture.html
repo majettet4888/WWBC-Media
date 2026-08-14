@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>WWBC Media Control (Build: Aug 08, 07:58 PM UTC)</title>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="content">
+
+        <h1>WWBC Media Control</h1>
+
+        <input
+            type="text"
+            id="reference"
+            placeholder="Example: John 3:16"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+        >
+
+        <div id="bookSuggestions" class="suggestions"></div>
+
+        <div id="recentReferencesRow" class="recent-references-row" style="display:none;">
+            <span class="recent-references-label">Recently Displayed:</span>
+            <div id="recentReferencesButtons" class="recent-references-buttons"></div>
+        </div>
+
+<div style="text-align:center;">
+
+    <div class="display-controls">
+        <select id="translation">
+            <option value="kjv" selected>KJV</option>
+            <option value="nkjv">NKJV</option>
+            <option value="niv">NIV</option>
+            <option value="esv">ESV</option>
+        </select>
+
+      <button id="prepareButton" type="button">
+    📖 Prepare
+</button>
+
+<button id="displayNowButton" type="button">
+    ▶ Display
+</button>
+
+<button id="returnWelcomeButton" type="button">
+    Welcome
+</button>
+
+</div>
+
+    <div class="scroll-preview-controls">
+        <div class="scroll-buttons">
+            <span class="scroll-buttons-label">Scroll Scripture:</span>
+            <button id="scrollUpButton" type="button" class="scroll-button">▲ Up</button>
+            <button id="scrollDownButton" type="button" class="scroll-button">▼ Down</button>
+        </div>
+    </div>
+
+</div>
+
+<div id="livePreviewBox" class="live-preview-box" style="display:none;">
+    <div id="livePreviewHeader" class="live-preview-header">
+        <span>Live TV Preview</span>
+        <button id="closePreviewButton" type="button" class="live-preview-close">&times;</button>
+    </div>
+    <div class="live-preview-frame-wrap">
+        <iframe id="livePreviewFrame" class="live-preview-frame" src="display.html" title="Live TV Preview"></iframe>
+    </div>
+    <div id="previewResizeHandle" class="preview-resize-handle" title="Drag to resize"></div>
+</div>
+
+<button id="reopenPreviewTab" type="button" class="reopen-preview-tab" style="display:none;" title="Show Live Preview">
+    📺
+</button>
+
+<div class="countdown-controls">
+    <div class="countdown-label">Start Countdown To Service</div>
+
+    <div class="countdown-inputs">
+        <input type="number" id="countdownHours" min="0" max="23" placeholder="0" inputmode="numeric">
+        <span>hr</span>
+
+        <input type="number" id="countdownMinutes" min="0" max="59" placeholder="5" inputmode="numeric">
+        <span>min</span>
+
+        <button id="startCountdownButton" type="button">Start Countdown</button>
+        <button id="cancelCountdownButton" type="button">Cancel</button>
+    </div>
+</div>
+
+<div id="statusPanel" class="status-panel">
+
+   <div class="status-title">System Status</div>
+
+    <div id="statusMessage">
+        🟢 Ready
+    </div>
+
+ <div class="now-showing-label">
+    Live Display
+</div>
+
+<div id="currentDisplayText">
+    Welcome Screen
+</div>
+
+<div id="countdownStatusRow" class="now-showing-label" style="display:none;">
+    Countdown
+</div>
+
+<div id="countdownStatusText" style="display:none;">
+    --:--
+</div>
+
+<div class="now-showing-label">
+    Prepared Scripture
+</div>
+
+<div id="preparedScriptureText">
+    None
+</div>
+
+<div id="preparedScripturePreview" class="prepared-preview">
+    No scripture prepared.
+</div>
+
+<div class="display-connection">
+    External Display(s) Connected:
+    <span
+        id="displayConnectionDot"
+        class="connection-dot disconnected"
+        title="No external display detected"
+    ></span>
+</div>
+
+</div>
+
+</div>
+
+<div class="bottom-actions">
+
+    <button id="browseBibleButton" type="button">
+        📖 Browse Bible
+    </button>
+
+    <button id="homeButton" onclick="location.href='index.html'">
+        ⬅ Home
+    </button>
+
+    <button id="newServiceButton" type="button">
+        New Service
+    </button>
+
+    <div id="browseBibleOverlay" class="browse-overlay" style="display:none;">
+        <div class="browse-box">
+            <div class="browse-header">
+                <button id="browseBackButton" type="button" class="browse-nav-button" style="visibility:hidden;">
+                    &larr; Back
+                </button>
+
+                <div id="browseTitle" class="browse-title">Select a Book</div>
+
+                <button id="browseCloseButton" type="button" class="browse-nav-button">
+                    Close &times;
+                </button>
+            </div>
+
+            <div id="browseRangeRow" class="browse-range-row" style="display:none;">
+                <span>Range:</span>
+                <input type="number" id="browseRangeStart" min="1" placeholder="Start">
+                <span>to</span>
+                <input type="number" id="browseRangeEnd" min="1" placeholder="End">
+                <button id="browseUseRangeButton" type="button">Use Range</button>
+            </div>
+
+            <div id="browseRangeError" class="browse-range-error" style="display:none;"></div>
+
+            <div id="browseGrid" class="browse-grid"></div>
+        </div>
+    </div>
+
+    <div id="newServiceConfirmOverlay" class="confirm-overlay" style="display:none;">
+        <div class="confirm-box">
+            <div class="confirm-message">
+                Start a new service?<br>
+                This clears the prepared and displayed scripture, and
+                returns the TVs to the Welcome screen. This cannot be undone.
+            </div>
+
+            <div class="confirm-buttons">
+                <button id="confirmNewServiceYes" type="button">Yes, Start New Service</button>
+                <button id="confirmNewServiceCancel" type="button">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+    </div>
+
+</div>
+<script src="api/bible.js"></script>
+<script src="js/app.js"></script>
+</body>
+
+</html>
