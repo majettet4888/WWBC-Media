@@ -1,3 +1,5 @@
+console.log("APP.JS VERSION 20260814f");
+
 document.addEventListener("DOMContentLoaded", () => {
     const prepareButton = document.getElementById("prepareButton");
     const displayNowButton = document.getElementById("displayNowButton");
@@ -1145,14 +1147,27 @@ focusReferenceInput();
     const livePreviewFrame =
         document.getElementById("livePreviewFrame");
 
-    function broadcastScrollPosition(position) {
-        // Always include a timestamp — if the position happens to be
-        // the same as last time (e.g. already at the bottom), a
-        // plain repeated value wouldn't register as a change and the
-        // TV would silently miss the update.
+    function broadcastScrollFraction(container) {
+        const scrollableHeight =
+            container.scrollHeight - container.clientHeight;
+
+        // How far through the passage this is, as a 0–1 fraction
+        // rather than a raw pixel count. The preview renders at a
+        // small fixed virtual size while the real TV renders at its
+        // own actual screen resolution, so the same pixel value
+        // means a different depth into the passage in each — a
+        // relative fraction lines them up correctly regardless of
+        // screen size. Always include a timestamp too, since a
+        // repeated identical fraction (e.g. already at the bottom)
+        // wouldn't otherwise register as a change.
+        const fraction =
+            scrollableHeight > 0
+                ? container.scrollTop / scrollableHeight
+                : 0;
+
         localStorage.setItem(
             "scrollPosition",
-            JSON.stringify({ position, ts: Date.now() })
+            JSON.stringify({ fraction, ts: Date.now() })
         );
     }
 
@@ -1270,7 +1285,7 @@ focusReferenceInput();
         if (!container) return false;
 
         container.addEventListener("scroll", () => {
-            broadcastScrollPosition(container.scrollTop);
+            broadcastScrollFraction(container);
         });
 
         previewScrollSyncAttached = true;
