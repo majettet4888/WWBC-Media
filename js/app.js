@@ -1,4 +1,4 @@
-console.log("APP.JS VERSION 20260815d");
+console.log("APP.JS VERSION 20260815e");
 
 document.addEventListener("DOMContentLoaded", () => {
     const prepareButton = document.getElementById("prepareButton");
@@ -53,10 +53,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("previewResizeEdgeLeft");
     const previewResizeEdgeRight =
         document.getElementById("previewResizeEdgeRight");
-    const previewResizeEdgeTop =
-        document.getElementById("previewResizeEdgeTop");
-    const previewResizeEdgeBottom =
-        document.getElementById("previewResizeEdgeBottom");
 
     const countdownHoursInput =
         document.getElementById("countdownHours");
@@ -1192,17 +1188,20 @@ focusReferenceInput();
             }, { passive: true });
         }
 
-        // Corners — both width and height at once (diagonal).
+        // Corners and side edges — all width-only now. Height
+        // resizing (top/bottom edges) is removed: making the box
+        // taller kept showing blank empty space below the text
+        // instead of more content, so rather than risk shipping
+        // that broken before Sunday, resizing is simplified to just
+        // width — which you confirmed is working well.
         wireHandle(previewResizeHandleRight, {
-            width: true, height: true,
+            width: true, height: false,
             pinnedSide: "left", pinnedEdge: "top"
         });
         wireHandle(previewResizeHandleLeft, {
-            width: true, height: true,
+            width: true, height: false,
             pinnedSide: "right", pinnedEdge: "top"
         });
-
-        // Side edges — width only.
         wireHandle(previewResizeEdgeRight, {
             width: true, height: false,
             pinnedSide: "left", pinnedEdge: "top"
@@ -1210,16 +1209,6 @@ focusReferenceInput();
         wireHandle(previewResizeEdgeLeft, {
             width: true, height: false,
             pinnedSide: "right", pinnedEdge: "top"
-        });
-
-        // Top/bottom edges — height only.
-        wireHandle(previewResizeEdgeBottom, {
-            width: false, height: true,
-            pinnedSide: "left", pinnedEdge: "top"
-        });
-        wireHandle(previewResizeEdgeTop, {
-            width: false, height: true,
-            pinnedSide: "left", pinnedEdge: "bottom"
         });
 
         window.addEventListener("mousemove", (e) => {
@@ -1366,7 +1355,7 @@ focusReferenceInput();
         const TAP_STEP = 250;
         const HOLD_SPEED_PX_PER_SEC = 380;
         const HOLD_START_DELAY_MS = 350;
-        const HOLD_BROADCAST_THROTTLE_MS = 80;
+        const HOLD_BROADCAST_THROTTLE_MS = 300;
 
         let holdTimeout = null;
         let animationFrameId = null;
@@ -1395,9 +1384,20 @@ focusReferenceInput();
                 // which was why the real TV wasn't reliably
                 // following the buttons even though the preview
                 // itself moved.
+                //
+                // Deferred with setTimeout(0) rather than called
+                // directly: figuring out which verse is at the top
+                // involves checking DOM element positions, which is
+                // real work for a long passage — doing that in the
+                // exact same instant as the scroll update was
+                // blocking the scroll motion itself and is what
+                // caused the stutter/freeze you were seeing. Pushing
+                // it to right after this frame paints lets the
+                // scroll stay smooth regardless of how long that
+                // measurement takes.
                 if (now - lastBroadcastTime >= HOLD_BROADCAST_THROTTLE_MS) {
                     lastBroadcastTime = now;
-                    broadcastScrollAnchor(container);
+                    setTimeout(() => broadcastScrollAnchor(container), 0);
                 }
             }
 
@@ -1478,7 +1478,7 @@ focusReferenceInput();
         // (while the local preview itself still tracks every event
         // for its own smoothness) fixes that without adding any
         // noticeable lag.
-        const BROADCAST_THROTTLE_MS = 80;
+        const BROADCAST_THROTTLE_MS = 200;
         let lastBroadcastTime = 0;
         let pendingBroadcast = null;
 
