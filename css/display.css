@@ -66,6 +66,13 @@ body.display-page {
  * deliberately oversized here so it's still usable at preview size
  * — this only applies inside the preview, never on the real TV.
  */
+body.preview-mode #scriptureContainer {
+    /* "auto" only shows the scrollbar once you interact with it on
+       some platforms — force it always visible in the preview so
+       it's there from the very first verse, not just after scrolling. */
+    overflow-y: scroll;
+}
+
 body.preview-mode #scriptureContainer::-webkit-scrollbar {
     width: 46px;
 }

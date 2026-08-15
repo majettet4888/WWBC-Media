@@ -301,7 +301,7 @@ button:disabled {
 
 .preview-resize-handle-right {
     right: 0;
-    cursor: nesw-resize;
+    cursor: nwse-resize;
 
     background:
         linear-gradient(
@@ -314,7 +314,7 @@ button:disabled {
 
 .preview-resize-handle-left {
     left: 0;
-    cursor: nwse-resize;
+    cursor: nesw-resize;
 
     background:
         linear-gradient(
