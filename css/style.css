@@ -219,11 +219,15 @@ button:disabled {
  * anywhere on screen and it never pushes other controls along or
  * blocks them. Appears automatically when scripture goes live.
  *
- * Width and height are now independently resizable (a normal
- * window's worth of edges/corners), rather than height being locked
- * to a fixed 16:9 ratio of width — dragging a side edge changes
- * shape, not just uniform size, matching how any other resizable
- * window behaves.
+ * Width and height are locked together (aspect-ratio), and the two
+ * corner handles grow/shrink both at once, proportionally — dragging
+ * bigger genuinely shows more of the passage (not just bigger text
+ * in the same-size window). An independent width-only/height-only
+ * edge system was tried and dropped: decoupling them meant the
+ * scaled mirror and the box's visible area could get out of sync,
+ * showing blank space instead of more content. Locking them
+ * together removes that risk entirely — there's only ever one
+ * consistent scale factor to keep track of.
  */
 .live-preview-box {
     position: fixed;
@@ -231,16 +235,9 @@ button:disabled {
     right: 24px;
     z-index: 900;
 
-    display: flex;
-    flex-direction: column;
-
     width: 340px;
     min-width: 260px;
     max-width: 900px;
-
-    height: 231px;
-    min-height: 140px;
-    max-height: 700px;
 
     border: 1px solid #ccc;
     border-radius: 8px;
@@ -250,8 +247,6 @@ button:disabled {
 }
 
 .live-preview-header {
-    flex: 0 0 auto;
-
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -285,8 +280,8 @@ button:disabled {
 }
 
 .live-preview-frame-wrap {
-    flex: 1 1 auto;
-    min-height: 0;
+    width: 100%;
+    aspect-ratio: 16 / 9;
 
     overflow: hidden;
 }
@@ -344,33 +339,6 @@ button:disabled {
             #999 45%, #999 55%,
             transparent 55%, transparent 100%
         );
-}
-
-/*
- * Edge strips — a normal window's worth of resize zones: the sides
- * change width only, top/bottom change height only. Kept thin and
- * inset from the corners so they don't fight with the corner
- * handles or (for the top edge) the header's own drag-to-move area.
- */
-.preview-resize-edge {
-    position: absolute;
-    z-index: 4;
-}
-
-.preview-resize-edge-left {
-    left: -3px;
-    top: 24px;
-    bottom: 24px;
-    width: 6px;
-    cursor: ew-resize;
-}
-
-.preview-resize-edge-right {
-    right: -3px;
-    top: 24px;
-    bottom: 24px;
-    width: 6px;
-    cursor: ew-resize;
 }
 
 /*
