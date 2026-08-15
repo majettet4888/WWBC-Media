@@ -216,8 +216,14 @@ button:disabled {
 /*
  * Floating, draggable live preview — deliberately NOT part of the
  * normal page flow (position: fixed) so the operator can drag it
- * anywhere on screen and it never pushes other controls around or
+ * anywhere on screen and it never pushes other controls along or
  * blocks them. Appears automatically when scripture goes live.
+ *
+ * Width and height are now independently resizable (a normal
+ * window's worth of edges/corners), rather than height being locked
+ * to a fixed 16:9 ratio of width — dragging a side edge changes
+ * shape, not just uniform size, matching how any other resizable
+ * window behaves.
  */
 .live-preview-box {
     position: fixed;
@@ -225,9 +231,16 @@ button:disabled {
     right: 24px;
     z-index: 900;
 
+    display: flex;
+    flex-direction: column;
+
     width: 340px;
     min-width: 260px;
     max-width: 900px;
+
+    height: 231px;
+    min-height: 140px;
+    max-height: 700px;
 
     border: 1px solid #ccc;
     border-radius: 8px;
@@ -237,6 +250,8 @@ button:disabled {
 }
 
 .live-preview-header {
+    flex: 0 0 auto;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -270,8 +285,8 @@ button:disabled {
 }
 
 .live-preview-frame-wrap {
-    width: 100%;
-    aspect-ratio: 16 / 9;
+    flex: 1 1 auto;
+    min-height: 0;
 
     overflow: hidden;
 }
@@ -283,7 +298,10 @@ button:disabled {
      * The real display renders at full TV size — shrink it down to
      * fit this small box while keeping everything proportional and
      * readable, instead of showing a tiny sliver of a huge page.
-     * --preview-scale is updated by JS when the box is resized.
+     * --preview-scale is updated by JS when the box is resized
+     * (based on width only — height now just controls how much of
+     * the already-scaled content is visible at once, so dragging
+     * the box taller reveals more lines rather than distorting text).
      */
     transform: scale(var(--preview-scale, 0.34));
     transform-origin: top left;
@@ -293,14 +311,16 @@ button:disabled {
 
 .preview-resize-handle {
     position: absolute;
-    bottom: 0;
 
     width: 20px;
     height: 20px;
+
+    z-index: 5;
 }
 
 .preview-resize-handle-right {
     right: 0;
+    bottom: 0;
     cursor: nwse-resize;
 
     background:
@@ -314,6 +334,7 @@ button:disabled {
 
 .preview-resize-handle-left {
     left: 0;
+    bottom: 0;
     cursor: nesw-resize;
 
     background:
@@ -323,6 +344,49 @@ button:disabled {
             #999 45%, #999 55%,
             transparent 55%, transparent 100%
         );
+}
+
+/*
+ * Edge strips — a normal window's worth of resize zones: the sides
+ * change width only, top/bottom change height only. Kept thin and
+ * inset from the corners so they don't fight with the corner
+ * handles or (for the top edge) the header's own drag-to-move area.
+ */
+.preview-resize-edge {
+    position: absolute;
+    z-index: 4;
+}
+
+.preview-resize-edge-left {
+    left: -3px;
+    top: 24px;
+    bottom: 24px;
+    width: 6px;
+    cursor: ew-resize;
+}
+
+.preview-resize-edge-right {
+    right: -3px;
+    top: 24px;
+    bottom: 24px;
+    width: 6px;
+    cursor: ew-resize;
+}
+
+.preview-resize-edge-top {
+    top: -3px;
+    left: 24px;
+    right: 24px;
+    height: 6px;
+    cursor: ns-resize;
+}
+
+.preview-resize-edge-bottom {
+    bottom: -3px;
+    left: 24px;
+    right: 24px;
+    height: 6px;
+    cursor: ns-resize;
 }
 
 /*

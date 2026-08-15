@@ -21,12 +21,19 @@ body.display-page {
     min-height: 100vh;
 }
 
-/* Fixed header */
+/*
+ * Header (deliberately NOT position:fixed anymore). The header's
+ * height used to be guessed with a hardcoded number on the scripture
+ * area below it (margin-top: 90px) — but when the reference text
+ * got bigger, the header could render taller than that guess and
+ * physically cover the top of verse 1, with no way to scroll past
+ * it since scrolling was already at 0. A flex column layout lets
+ * the header take exactly the height its content actually needs,
+ * and the scripture area fills precisely whatever's left — correct
+ * automatically for any reference length or font size, forever.
+ */
 #header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    flex: 0 0 auto;
 
     background: white;
 
@@ -35,8 +42,6 @@ body.display-page {
     padding: 25px;
 
     border-bottom: 2px solid #ddd;
-
-    z-index: 100;
 }
 
 /* Scripture reference */
@@ -49,9 +54,9 @@ body.display-page {
 /* Scrollable scripture area */
 #scriptureContainer {
 
-    margin-top: 90px;
-
-    height: calc(100vh - 90px);
+    flex: 1 1 auto;
+    min-height: 0; /* required for flex children to actually scroll
+                       instead of overflowing their flex container */
 
     overflow-y: auto;
 
@@ -264,7 +269,8 @@ body.preview-mode #scriptureContainer::-webkit-scrollbar-thumb {
 }
 #scriptureScreen {
     display: none;
-    min-height: 100vh;
+    flex-direction: column;
+    height: 100vh;
 }
 
 /* Welcome — move up slightly */
@@ -345,14 +351,12 @@ body.scripture-mode {
 /* Hymnal screen — mirrors the scripture screen's readable, high-contrast style */
 #hymnalScreen {
     display: none;
-    min-height: 100vh;
+    flex-direction: column;
+    height: 100vh;
 }
 
 #hymnalHeader {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    flex: 0 0 auto;
 
     background: white;
 
@@ -361,8 +365,6 @@ body.scripture-mode {
     padding: 25px;
 
     border-bottom: 2px solid #ddd;
-
-    z-index: 10;
 }
 
 #hymnalTitleText {
@@ -373,9 +375,8 @@ body.scripture-mode {
 }
 
 #hymnalContainer {
-    margin-top: 90px;
-
-    height: calc(100vh - 90px);
+    flex: 1 1 auto;
+    min-height: 0;
 
     overflow-y: auto;
 
