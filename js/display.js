@@ -48,7 +48,7 @@ function showScriptureScreen() {
     document.body.classList.add("scripture-mode");
 
     welcomeScreen.style.display = "none";
-    scriptureScreen.style.display = "block";
+    scriptureScreen.style.display = "flex";
     hymnalScreen.style.display = "none";
 
     loadScripture();
@@ -61,7 +61,7 @@ function showHymnalScreen() {
 
     welcomeScreen.style.display = "none";
     scriptureScreen.style.display = "none";
-    hymnalScreen.style.display = "block";
+    hymnalScreen.style.display = "flex";
 
     loadHymn();
 }

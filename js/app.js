@@ -1,4 +1,4 @@
-console.log("APP.JS VERSION 20260814g");
+console.log("APP.JS VERSION 20260815c");
 
 document.addEventListener("DOMContentLoaded", () => {
     const prepareButton = document.getElementById("prepareButton");
@@ -49,6 +49,14 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("previewResizeHandleLeft");
     const previewResizeHandleRight =
         document.getElementById("previewResizeHandleRight");
+    const previewResizeEdgeLeft =
+        document.getElementById("previewResizeEdgeLeft");
+    const previewResizeEdgeRight =
+        document.getElementById("previewResizeEdgeRight");
+    const previewResizeEdgeTop =
+        document.getElementById("previewResizeEdgeTop");
+    const previewResizeEdgeBottom =
+        document.getElementById("previewResizeEdgeBottom");
 
     const countdownHoursInput =
         document.getElementById("countdownHours");
@@ -927,6 +935,29 @@ focusReferenceInput();
     closePreviewButton.addEventListener("click", hideLivePreview);
     reopenPreviewTab.addEventListener("click", showLivePreview);
 
+    const livePreviewFrame =
+        document.getElementById("livePreviewFrame");
+
+    /*
+     * While actively dragging the header or a resize handle, the
+     * cursor frequently passes over the iframe (it fills most of
+     * the box). Mouse-up events that happen while the cursor is
+     * over an iframe are captured by THAT iframe's own document and
+     * never reach this page's listeners — which is exactly what
+     * made dragging/resizing feel "stuck" and keep going after
+     * release. Disabling pointer events on the iframe for the
+     * duration of the drag makes it transparent to the mouse, so
+     * this page reliably receives the release no matter where the
+     * cursor ends up.
+     */
+    function suspendPreviewInteraction() {
+        livePreviewFrame.style.pointerEvents = "none";
+    }
+
+    function restorePreviewInteraction() {
+        livePreviewFrame.style.pointerEvents = "auto";
+    }
+
     // Dragging — grab the header, move the box, works with mouse
     // or touch (Chromebooks can have either).
     (function enablePreviewDragging() {
@@ -935,6 +966,8 @@ focusReferenceInput();
         let offsetY = 0;
 
         function startDrag(clientX, clientY) {
+            suspendPreviewInteraction();
+
             const rect = livePreviewBox.getBoundingClientRect();
 
             dragging = true;
@@ -969,6 +1002,7 @@ focusReferenceInput();
 
         function endDrag() {
             dragging = false;
+            restorePreviewInteraction();
         }
 
         livePreviewHeader.addEventListener("mousedown", (e) => {
@@ -1000,18 +1034,32 @@ focusReferenceInput();
     // handle grows it to the left — whichever side has more room on
     // screen). The iframe is re-scaled (not just cropped) so
     // enlarging it actually makes the text easier to read.
+    //
+    // Works like a normal resizable window: side edges (left/right)
+    // change width only, top/bottom edges change height only, and
+    // the two corners change both at once (diagonal). Width drives
+    // how large the mirrored text renders; height just controls how
+    // much of it is visible at once (more/fewer lines), so changing
+    // height doesn't distort anything.
     (function enablePreviewResizing() {
         const MIN_WIDTH = 260;
         const MAX_WIDTH = 900;
+        const MIN_HEIGHT = 140;
+        const MAX_HEIGHT = 700;
         const NATIVE_WIDTH = 1000; // matches .live-preview-frame width
-        const NATIVE_HEIGHT = 562; // matches .live-preview-frame height (16:9)
 
         let resizing = false;
-        let anchor = "left"; // which edge stays fixed while resizing
+        let resizeWidth = false;
+        let resizeHeight = false;
+        let pinnedSide = "left";  // which horizontal edge stays fixed
+        let pinnedEdge = "top";   // which vertical edge stays fixed
+
         let startX = 0;
         let startY = 0;
         let startWidth = 0;
+        let startHeight = 0;
         let startLeft = 0;
+        let startTop = 0;
 
         function applyScale(width) {
             livePreviewBox.style.setProperty(
@@ -1024,7 +1072,7 @@ focusReferenceInput();
             // Whether the box is still right-anchored (never moved)
             // or already left-anchored (previously dragged), lock in
             // its current on-screen position as explicit left/top
-            // first — so growing width from here always behaves
+            // first — so resizing from here always behaves
             // predictably instead of depending on which anchor it
             // happened to have.
             const rect = livePreviewBox.getBoundingClientRect();
@@ -1034,15 +1082,29 @@ focusReferenceInput();
             return rect;
         }
 
-        function startResize(clientX, clientY, side) {
+        /**
+         * config: { width: bool, height: bool, pinnedSide: 'left'|'right', pinnedEdge: 'top'|'bottom' }
+         * pinnedSide/pinnedEdge say which side stays put while the
+         * opposite one moves — e.g. the right-edge handle pins the
+         * left side and grows the right side outward.
+         */
+        function startResize(clientX, clientY, config) {
+            suspendPreviewInteraction();
+
             resizing = true;
-            anchor = side;
+            resizeWidth = config.width;
+            resizeHeight = config.height;
+            pinnedSide = config.pinnedSide;
+            pinnedEdge = config.pinnedEdge;
+
             startX = clientX;
             startY = clientY;
 
             const rect = pinToLeftPositioning();
             startWidth = rect.width;
+            startHeight = rect.height;
             startLeft = rect.left;
+            startTop = rect.top;
         }
 
         function moveResize(clientX, clientY) {
@@ -1051,61 +1113,89 @@ focusReferenceInput();
             const deltaX = clientX - startX;
             const deltaY = clientY - startY;
 
-            // A true diagonal drag, like any normal corner-resize
-            // handle: moving the cursor down (away from the box)
-            // grows it just as much as moving it sideways does —
-            // not just horizontal movement. Vertical movement is
-            // converted to an equivalent width change using the
-            // box's fixed aspect ratio, then combined with the
-            // horizontal movement.
-            const verticalAsWidth =
-                deltaY * (NATIVE_WIDTH / NATIVE_HEIGHT);
+            if (resizeWidth) {
+                const widthDelta =
+                    pinnedSide === "left" ? deltaX : -deltaX;
+                const newWidth = startWidth + widthDelta;
+                const clampedWidth = Math.min(
+                    Math.max(newWidth, MIN_WIDTH),
+                    MAX_WIDTH
+                );
 
-            let widthDelta;
-            let newLeft;
+                const newLeft =
+                    pinnedSide === "left"
+                        ? startLeft
+                        : startLeft + startWidth - clampedWidth;
 
-            if (anchor === "right") {
-                // Left edge pinned — dragging right or down grows it.
-                widthDelta = deltaX + verticalAsWidth;
-                newLeft = startLeft;
-            } else {
-                // Right edge pinned — dragging left or down grows it.
-                widthDelta = -deltaX + verticalAsWidth;
-                newLeft = startLeft - deltaX;
+                livePreviewBox.style.width = `${clampedWidth}px`;
+                livePreviewBox.style.left = `${newLeft}px`;
+                applyScale(clampedWidth);
             }
 
-            const newWidth = startWidth + widthDelta;
+            if (resizeHeight) {
+                const heightDelta =
+                    pinnedEdge === "top" ? deltaY : -deltaY;
+                const newHeight = startHeight + heightDelta;
+                const clampedHeight = Math.min(
+                    Math.max(newHeight, MIN_HEIGHT),
+                    MAX_HEIGHT
+                );
 
-            const clampedWidth = Math.min(
-                Math.max(newWidth, MIN_WIDTH),
-                MAX_WIDTH
-            );
+                const newTop =
+                    pinnedEdge === "top"
+                        ? startTop
+                        : startTop + startHeight - clampedHeight;
 
-            // If we hit the min/max clamp, keep the pinned edge
-            // truly fixed by adjusting left only for the left-handle
-            // case (right-handle case never needs to move left).
-            if (anchor === "left") {
-                const overshoot = newWidth - clampedWidth;
-                newLeft = newLeft + overshoot;
+                livePreviewBox.style.height = `${clampedHeight}px`;
+                livePreviewBox.style.top = `${newTop}px`;
             }
-
-            livePreviewBox.style.width = `${clampedWidth}px`;
-            livePreviewBox.style.left = `${newLeft}px`;
-            applyScale(clampedWidth);
         }
 
         function endResize() {
             resizing = false;
+            restorePreviewInteraction();
         }
 
-        previewResizeHandleRight.addEventListener("mousedown", (e) => {
-            startResize(e.clientX, e.clientY, "right");
-            e.preventDefault();
+        function wireHandle(el, config) {
+            el.addEventListener("mousedown", (e) => {
+                startResize(e.clientX, e.clientY, config);
+                e.preventDefault();
+            });
+
+            el.addEventListener("touchstart", (e) => {
+                const touch = e.touches[0];
+                startResize(touch.clientX, touch.clientY, config);
+            }, { passive: true });
+        }
+
+        // Corners — both width and height at once (diagonal).
+        wireHandle(previewResizeHandleRight, {
+            width: true, height: true,
+            pinnedSide: "left", pinnedEdge: "top"
+        });
+        wireHandle(previewResizeHandleLeft, {
+            width: true, height: true,
+            pinnedSide: "right", pinnedEdge: "top"
         });
 
-        previewResizeHandleLeft.addEventListener("mousedown", (e) => {
-            startResize(e.clientX, e.clientY, "left");
-            e.preventDefault();
+        // Side edges — width only.
+        wireHandle(previewResizeEdgeRight, {
+            width: true, height: false,
+            pinnedSide: "left", pinnedEdge: "top"
+        });
+        wireHandle(previewResizeEdgeLeft, {
+            width: true, height: false,
+            pinnedSide: "right", pinnedEdge: "top"
+        });
+
+        // Top/bottom edges — height only.
+        wireHandle(previewResizeEdgeBottom, {
+            width: false, height: true,
+            pinnedSide: "left", pinnedEdge: "top"
+        });
+        wireHandle(previewResizeEdgeTop, {
+            width: false, height: true,
+            pinnedSide: "left", pinnedEdge: "bottom"
         });
 
         window.addEventListener("mousemove", (e) => {
@@ -1113,16 +1203,6 @@ focusReferenceInput();
         });
 
         window.addEventListener("mouseup", endResize);
-
-        previewResizeHandleRight.addEventListener("touchstart", (e) => {
-            const touch = e.touches[0];
-            startResize(touch.clientX, touch.clientY, "right");
-        }, { passive: true });
-
-        previewResizeHandleLeft.addEventListener("touchstart", (e) => {
-            const touch = e.touches[0];
-            startResize(touch.clientX, touch.clientY, "left");
-        }, { passive: true });
 
         window.addEventListener("touchmove", (e) => {
             if (!resizing) return;
@@ -1144,9 +1224,6 @@ focusReferenceInput();
      * its scrollbar) works too — either way, the resulting position
      * is broadcast to the real TV so both always match.
      */
-    const livePreviewFrame =
-        document.getElementById("livePreviewFrame");
-
     function broadcastScrollAnchor(container) {
         // Sync by WHICH VERSE is at the top of the screen, not by a
         // raw pixel or percentage position. A percentage still broke
@@ -1250,17 +1327,41 @@ focusReferenceInput();
      * repeated clicking. Release is tracked on the whole window
      * (not just the button) so a slight cursor drift off the button
      * while your mouse is still held down doesn't cut it short.
+     *
+     * Uses requestAnimationFrame with a pixels-per-second rate
+     * (rather than jumping a fixed distance every fixed interval) so
+     * the motion is genuinely smooth/continuous instead of visibly
+     * stepping — the previous version moved in small but distinct
+     * jumps, which looked jittery rather than gliding.
      */
     function setupHoldToScroll(button, direction) {
         const TAP_STEP = 250;
-        const HOLD_STEP = 35;
-        const HOLD_INTERVAL_MS = 90;
+        const HOLD_SPEED_PX_PER_SEC = 380;
         const HOLD_START_DELAY_MS = 350;
 
         let holdTimeout = null;
-        let holdInterval = null;
+        let animationFrameId = null;
+        let lastFrameTime = null;
         let isHolding = false;
         let isPressed = false;
+
+        function animateHoldScroll(now) {
+            if (!isHolding) return;
+
+            if (lastFrameTime !== null) {
+                const deltaSeconds = (now - lastFrameTime) / 1000;
+                const amount =
+                    direction * HOLD_SPEED_PX_PER_SEC * deltaSeconds;
+
+                const container = getPreviewScriptureContainer();
+                if (container) {
+                    container.scrollTop += amount;
+                }
+            }
+
+            lastFrameTime = now;
+            animationFrameId = requestAnimationFrame(animateHoldScroll);
+        }
 
         function startHold() {
             isPressed = true;
@@ -1268,9 +1369,8 @@ focusReferenceInput();
 
             holdTimeout = setTimeout(() => {
                 isHolding = true;
-                holdInterval = setInterval(() => {
-                    scrollPreviewBy(direction * HOLD_STEP, false);
-                }, HOLD_INTERVAL_MS);
+                lastFrameTime = null;
+                animationFrameId = requestAnimationFrame(animateHoldScroll);
             }, HOLD_START_DELAY_MS);
         }
 
@@ -1279,9 +1379,12 @@ focusReferenceInput();
             isPressed = false;
 
             clearTimeout(holdTimeout);
-            clearInterval(holdInterval);
             holdTimeout = null;
-            holdInterval = null;
+
+            if (animationFrameId !== null) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
 
             if (!isHolding) {
                 // It was a quick tap, not a hold — do the normal
@@ -1326,8 +1429,31 @@ focusReferenceInput();
         const container = getPreviewScriptureContainer();
         if (!container) return false;
 
+        // Broadcasting on every single scroll event (which can fire
+        // dozens of times per second during a smooth/held scroll)
+        // flooded the real TV with updates and made it look jittery
+        // there — throttling how often we actually send an update
+        // (while the local preview itself still tracks every event
+        // for its own smoothness) fixes that without adding any
+        // noticeable lag.
+        const BROADCAST_THROTTLE_MS = 80;
+        let lastBroadcastTime = 0;
+        let pendingBroadcast = null;
+
         container.addEventListener("scroll", () => {
-            broadcastScrollAnchor(container);
+            const now = Date.now();
+            const elapsed = now - lastBroadcastTime;
+
+            if (elapsed >= BROADCAST_THROTTLE_MS) {
+                lastBroadcastTime = now;
+                broadcastScrollAnchor(container);
+            } else if (!pendingBroadcast) {
+                pendingBroadcast = setTimeout(() => {
+                    pendingBroadcast = null;
+                    lastBroadcastTime = Date.now();
+                    broadcastScrollAnchor(container);
+                }, BROADCAST_THROTTLE_MS - elapsed);
+            }
         });
 
         previewScrollSyncAttached = true;
