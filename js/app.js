@@ -1,4 +1,4 @@
-console.log("APP.JS VERSION 20260815c");
+console.log("APP.JS VERSION 20260815d");
 
 document.addEventListener("DOMContentLoaded", () => {
     const prepareButton = document.getElementById("prepareButton");
@@ -925,6 +925,12 @@ focusReferenceInput();
     function showLivePreview() {
         livePreviewBox.style.display = "block";
         reopenPreviewTab.style.display = "none";
+
+        // getBoundingClientRect() returns all zeros while the box is
+        // hidden (display:none), so any sizing math run before this
+        // point was meaningless — recalculate now that it's actually
+        // visible and has real dimensions.
+        applyPreviewSizing();
     }
 
     function hideLivePreview() {
@@ -937,6 +943,31 @@ focusReferenceInput();
 
     const livePreviewFrame =
         document.getElementById("livePreviewFrame");
+    const livePreviewFrameWrap =
+        document.getElementById("livePreviewFrameWrap");
+
+    const PREVIEW_NATIVE_WIDTH = 1000; // matches .live-preview-frame width
+
+    function applyPreviewSizing() {
+        const boxWidth = livePreviewBox.getBoundingClientRect().width;
+        const scale = boxWidth / PREVIEW_NATIVE_WIDTH;
+
+        livePreviewBox.style.setProperty("--preview-scale", scale);
+
+        // How much vertical space the wrap actually has right now
+        // (box height minus the header) — then size the iframe's
+        // own internal page to exactly that much space (accounting
+        // for the scale-down). Without this, the iframe's internal
+        // page stayed a fixed height no matter how tall the box was
+        // dragged, so making the box taller just revealed blank
+        // background instead of more of the actual scripture — this
+        // is what fixes that.
+        const wrapHeight =
+            livePreviewFrameWrap.getBoundingClientRect().height;
+        const iframeHeight = scale > 0 ? wrapHeight / scale : 0;
+
+        livePreviewFrame.style.height = `${iframeHeight}px`;
+    }
 
     /*
      * While actively dragging the header or a resize handle, the
@@ -1046,7 +1077,6 @@ focusReferenceInput();
         const MAX_WIDTH = 900;
         const MIN_HEIGHT = 140;
         const MAX_HEIGHT = 700;
-        const NATIVE_WIDTH = 1000; // matches .live-preview-frame width
 
         let resizing = false;
         let resizeWidth = false;
@@ -1060,13 +1090,6 @@ focusReferenceInput();
         let startHeight = 0;
         let startLeft = 0;
         let startTop = 0;
-
-        function applyScale(width) {
-            livePreviewBox.style.setProperty(
-                "--preview-scale",
-                width / NATIVE_WIDTH
-            );
-        }
 
         function pinToLeftPositioning() {
             // Whether the box is still right-anchored (never moved)
@@ -1129,7 +1152,7 @@ focusReferenceInput();
 
                 livePreviewBox.style.width = `${clampedWidth}px`;
                 livePreviewBox.style.left = `${newLeft}px`;
-                applyScale(clampedWidth);
+                applyPreviewSizing();
             }
 
             if (resizeHeight) {
@@ -1148,6 +1171,7 @@ focusReferenceInput();
 
                 livePreviewBox.style.height = `${clampedHeight}px`;
                 livePreviewBox.style.top = `${newTop}px`;
+                applyPreviewSizing();
             }
         }
 
@@ -1212,8 +1236,12 @@ focusReferenceInput();
 
         window.addEventListener("touchend", endResize);
 
-        // Set the initial scale to match the starting CSS width.
-        applyScale(livePreviewBox.offsetWidth || 340);
+        // Set the initial sizing to match the starting CSS width.
+        // (Also re-applied in showLivePreview, since the box is
+        // hidden at this point and getBoundingClientRect would
+        // return zeros — this call mainly exists so --preview-scale
+        // has a sane value before that.)
+        applyPreviewSizing();
     })();
 
     /*
@@ -1338,24 +1366,38 @@ focusReferenceInput();
         const TAP_STEP = 250;
         const HOLD_SPEED_PX_PER_SEC = 380;
         const HOLD_START_DELAY_MS = 350;
+        const HOLD_BROADCAST_THROTTLE_MS = 80;
 
         let holdTimeout = null;
         let animationFrameId = null;
         let lastFrameTime = null;
+        let lastBroadcastTime = 0;
         let isHolding = false;
         let isPressed = false;
 
         function animateHoldScroll(now) {
             if (!isHolding) return;
 
-            if (lastFrameTime !== null) {
+            const container = getPreviewScriptureContainer();
+
+            if (lastFrameTime !== null && container) {
                 const deltaSeconds = (now - lastFrameTime) / 1000;
                 const amount =
                     direction * HOLD_SPEED_PX_PER_SEC * deltaSeconds;
 
-                const container = getPreviewScriptureContainer();
-                if (container) {
-                    container.scrollTop += amount;
+                container.scrollTop += amount;
+
+                // Broadcast directly here, on our own throttle,
+                // instead of relying solely on the native "scroll"
+                // event to trigger it — that event isn't guaranteed
+                // to fire reliably for every rapid programmatic
+                // change during a fast, continuous loop like this,
+                // which was why the real TV wasn't reliably
+                // following the buttons even though the preview
+                // itself moved.
+                if (now - lastBroadcastTime >= HOLD_BROADCAST_THROTTLE_MS) {
+                    lastBroadcastTime = now;
+                    broadcastScrollAnchor(container);
                 }
             }
 
