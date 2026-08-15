@@ -373,22 +373,6 @@ button:disabled {
     cursor: ew-resize;
 }
 
-.preview-resize-edge-top {
-    top: -3px;
-    left: 24px;
-    right: 24px;
-    height: 6px;
-    cursor: ns-resize;
-}
-
-.preview-resize-edge-bottom {
-    bottom: -3px;
-    left: 24px;
-    right: 24px;
-    height: 6px;
-    cursor: ns-resize;
-}
-
 /*
  * Small, unobtrusive tab to bring the preview back if it was
  * closed — deliberately not a full labeled button, so it doesn't
