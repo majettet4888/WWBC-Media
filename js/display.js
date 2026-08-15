@@ -179,16 +179,25 @@ function loadScripture() {
  * Keeps this display's scroll position in sync with the Control
  * page's live preview — whichever one the operator interacts with
  * (the Up/Down buttons, or scrolling the preview itself directly)
- * updates a shared "scrollPosition" value that this display simply
- * matches, so both ways of scrolling always agree with each other.
+ * updates a shared scroll fraction that this display matches, so
+ * both ways of scrolling always agree with each other. A fraction
+ * (0–1, "how far through the passage") is used rather than a raw
+ * pixel count, because the preview renders at a small fixed size
+ * while this real screen renders at its own actual resolution —
+ * the same pixel value would land at a different depth into the
+ * passage in each.
  */
-function handleRemoteScrollPosition(position) {
+function handleRemoteScrollFraction(fraction) {
     const scriptureContainer =
         document.getElementById("scriptureContainer");
 
     if (!scriptureContainer) return;
 
-    scriptureContainer.scrollTop = position;
+    const scrollableHeight =
+        scriptureContainer.scrollHeight -
+        scriptureContainer.clientHeight;
+
+    scriptureContainer.scrollTop = fraction * Math.max(scrollableHeight, 0);
 }
 
 function formatVerseText(text, reference, verseNumber) {
@@ -489,9 +498,13 @@ window.addEventListener("storage", async (event) => {
     }
 
     if (event.key === "scrollPosition" && event.newValue !== null) {
-        const position = Number(event.newValue);
-        if (!Number.isNaN(position)) {
-            handleRemoteScrollPosition(position);
+        try {
+            const data = JSON.parse(event.newValue);
+            if (!Number.isNaN(data.fraction)) {
+                handleRemoteScrollFraction(data.fraction);
+            }
+        } catch (error) {
+            console.error("Unable to read scroll position.", error);
         }
     }
 
