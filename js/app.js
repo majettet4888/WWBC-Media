@@ -1,4 +1,4 @@
-console.log("APP.JS VERSION 20260815e");
+console.log("APP.JS VERSION 20260815f");
 
 document.addEventListener("DOMContentLoaded", () => {
     const prepareButton = document.getElementById("prepareButton");
@@ -49,10 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("previewResizeHandleLeft");
     const previewResizeHandleRight =
         document.getElementById("previewResizeHandleRight");
-    const previewResizeEdgeLeft =
-        document.getElementById("previewResizeEdgeLeft");
-    const previewResizeEdgeRight =
-        document.getElementById("previewResizeEdgeRight");
 
     const countdownHoursInput =
         document.getElementById("countdownHours");
@@ -939,30 +935,20 @@ focusReferenceInput();
 
     const livePreviewFrame =
         document.getElementById("livePreviewFrame");
-    const livePreviewFrameWrap =
-        document.getElementById("livePreviewFrameWrap");
 
     const PREVIEW_NATIVE_WIDTH = 1000; // matches .live-preview-frame width
 
     function applyPreviewSizing() {
+        // Width alone drives the scale — height is locked to a
+        // 16:9 ratio of width via CSS (aspect-ratio), so it's always
+        // implicitly correct without any separate calculation. This
+        // is simpler and safer than tracking width and height
+        // independently, which was what caused the blank-space bug
+        // (the box and the mirrored content could get out of sync).
         const boxWidth = livePreviewBox.getBoundingClientRect().width;
         const scale = boxWidth / PREVIEW_NATIVE_WIDTH;
 
         livePreviewBox.style.setProperty("--preview-scale", scale);
-
-        // How much vertical space the wrap actually has right now
-        // (box height minus the header) — then size the iframe's
-        // own internal page to exactly that much space (accounting
-        // for the scale-down). Without this, the iframe's internal
-        // page stayed a fixed height no matter how tall the box was
-        // dragged, so making the box taller just revealed blank
-        // background instead of more of the actual scripture — this
-        // is what fixes that.
-        const wrapHeight =
-            livePreviewFrameWrap.getBoundingClientRect().height;
-        const iframeHeight = scale > 0 ? wrapHeight / scale : 0;
-
-        livePreviewFrame.style.height = `${iframeHeight}px`;
     }
 
     /*
@@ -984,6 +970,16 @@ focusReferenceInput();
     function restorePreviewInteraction() {
         livePreviewFrame.style.pointerEvents = "auto";
     }
+
+    // Safety net: guarantee the iframe can never get permanently
+    // stuck ignoring the mouse (which would make scrolling over the
+    // preview leak through to the page behind it instead). The drag
+    // and resize code below already restores this on their own
+    // mouseup/touchend, but this is a global backstop that always
+    // runs too, in case any interaction ever ends in an unexpected
+    // way that skips that specific cleanup.
+    window.addEventListener("mouseup", restorePreviewInteraction);
+    window.addEventListener("touchend", restorePreviewInteraction);
 
     // Dragging — grab the header, move the box, works with mouse
     // or touch (Chromebooks can have either).
@@ -1059,39 +1055,24 @@ focusReferenceInput();
     // Resizing — drag either bottom corner to make the preview
     // bigger or smaller (right handle grows it to the right, left
     // handle grows it to the left — whichever side has more room on
-    // screen). The iframe is re-scaled (not just cropped) so
-    // enlarging it actually makes the text easier to read.
-    //
-    // Works like a normal resizable window: side edges (left/right)
-    // change width only, top/bottom edges change height only, and
-    // the two corners change both at once (diagonal). Width drives
-    // how large the mirrored text renders; height just controls how
-    // much of it is visible at once (more/fewer lines), so changing
-    // height doesn't distort anything.
+    // screen). Width and height move together (locked 16:9 ratio),
+    // so making it bigger genuinely shows more of the passage, not
+    // just bigger text in the same amount of space.
     (function enablePreviewResizing() {
         const MIN_WIDTH = 260;
         const MAX_WIDTH = 900;
-        const MIN_HEIGHT = 140;
-        const MAX_HEIGHT = 700;
 
         let resizing = false;
-        let resizeWidth = false;
-        let resizeHeight = false;
-        let pinnedSide = "left";  // which horizontal edge stays fixed
-        let pinnedEdge = "top";   // which vertical edge stays fixed
-
+        let anchor = "left"; // which edge stays fixed while resizing
         let startX = 0;
-        let startY = 0;
         let startWidth = 0;
-        let startHeight = 0;
         let startLeft = 0;
-        let startTop = 0;
 
         function pinToLeftPositioning() {
             // Whether the box is still right-anchored (never moved)
             // or already left-anchored (previously dragged), lock in
             // its current on-screen position as explicit left/top
-            // first — so resizing from here always behaves
+            // first — so growing width from here always behaves
             // predictably instead of depending on which anchor it
             // happened to have.
             const rect = livePreviewBox.getBoundingClientRect();
@@ -1101,74 +1082,40 @@ focusReferenceInput();
             return rect;
         }
 
-        /**
-         * config: { width: bool, height: bool, pinnedSide: 'left'|'right', pinnedEdge: 'top'|'bottom' }
-         * pinnedSide/pinnedEdge say which side stays put while the
-         * opposite one moves — e.g. the right-edge handle pins the
-         * left side and grows the right side outward.
-         */
-        function startResize(clientX, clientY, config) {
+        function startResize(clientX, side) {
             suspendPreviewInteraction();
 
             resizing = true;
-            resizeWidth = config.width;
-            resizeHeight = config.height;
-            pinnedSide = config.pinnedSide;
-            pinnedEdge = config.pinnedEdge;
-
+            anchor = side;
             startX = clientX;
-            startY = clientY;
 
             const rect = pinToLeftPositioning();
             startWidth = rect.width;
-            startHeight = rect.height;
             startLeft = rect.left;
-            startTop = rect.top;
         }
 
-        function moveResize(clientX, clientY) {
+        function moveResize(clientX) {
             if (!resizing) return;
 
             const deltaX = clientX - startX;
-            const deltaY = clientY - startY;
 
-            if (resizeWidth) {
-                const widthDelta =
-                    pinnedSide === "left" ? deltaX : -deltaX;
-                const newWidth = startWidth + widthDelta;
-                const clampedWidth = Math.min(
-                    Math.max(newWidth, MIN_WIDTH),
-                    MAX_WIDTH
-                );
+            const widthDelta =
+                anchor === "right" ? deltaX : -deltaX;
+            const newWidth = startWidth + widthDelta;
 
-                const newLeft =
-                    pinnedSide === "left"
-                        ? startLeft
-                        : startLeft + startWidth - clampedWidth;
+            const clampedWidth = Math.min(
+                Math.max(newWidth, MIN_WIDTH),
+                MAX_WIDTH
+            );
 
-                livePreviewBox.style.width = `${clampedWidth}px`;
-                livePreviewBox.style.left = `${newLeft}px`;
-                applyPreviewSizing();
-            }
+            const newLeft =
+                anchor === "right"
+                    ? startLeft
+                    : startLeft + startWidth - clampedWidth;
 
-            if (resizeHeight) {
-                const heightDelta =
-                    pinnedEdge === "top" ? deltaY : -deltaY;
-                const newHeight = startHeight + heightDelta;
-                const clampedHeight = Math.min(
-                    Math.max(newHeight, MIN_HEIGHT),
-                    MAX_HEIGHT
-                );
-
-                const newTop =
-                    pinnedEdge === "top"
-                        ? startTop
-                        : startTop + startHeight - clampedHeight;
-
-                livePreviewBox.style.height = `${clampedHeight}px`;
-                livePreviewBox.style.top = `${newTop}px`;
-                applyPreviewSizing();
-            }
+            livePreviewBox.style.width = `${clampedWidth}px`;
+            livePreviewBox.style.left = `${newLeft}px`;
+            applyPreviewSizing();
         }
 
         function endResize() {
@@ -1176,51 +1123,33 @@ focusReferenceInput();
             restorePreviewInteraction();
         }
 
-        function wireHandle(el, config) {
-            el.addEventListener("mousedown", (e) => {
-                startResize(e.clientX, e.clientY, config);
-                e.preventDefault();
-            });
+        previewResizeHandleRight.addEventListener("mousedown", (e) => {
+            startResize(e.clientX, "right");
+            e.preventDefault();
+        });
 
-            el.addEventListener("touchstart", (e) => {
-                const touch = e.touches[0];
-                startResize(touch.clientX, touch.clientY, config);
-            }, { passive: true });
-        }
-
-        // Corners and side edges — all width-only now. Height
-        // resizing (top/bottom edges) is removed: making the box
-        // taller kept showing blank empty space below the text
-        // instead of more content, so rather than risk shipping
-        // that broken before Sunday, resizing is simplified to just
-        // width — which you confirmed is working well.
-        wireHandle(previewResizeHandleRight, {
-            width: true, height: false,
-            pinnedSide: "left", pinnedEdge: "top"
-        });
-        wireHandle(previewResizeHandleLeft, {
-            width: true, height: false,
-            pinnedSide: "right", pinnedEdge: "top"
-        });
-        wireHandle(previewResizeEdgeRight, {
-            width: true, height: false,
-            pinnedSide: "left", pinnedEdge: "top"
-        });
-        wireHandle(previewResizeEdgeLeft, {
-            width: true, height: false,
-            pinnedSide: "right", pinnedEdge: "top"
+        previewResizeHandleLeft.addEventListener("mousedown", (e) => {
+            startResize(e.clientX, "left");
+            e.preventDefault();
         });
 
         window.addEventListener("mousemove", (e) => {
-            moveResize(e.clientX, e.clientY);
+            moveResize(e.clientX);
         });
 
         window.addEventListener("mouseup", endResize);
 
+        previewResizeHandleRight.addEventListener("touchstart", (e) => {
+            startResize(e.touches[0].clientX, "right");
+        }, { passive: true });
+
+        previewResizeHandleLeft.addEventListener("touchstart", (e) => {
+            startResize(e.touches[0].clientX, "left");
+        }, { passive: true });
+
         window.addEventListener("touchmove", (e) => {
             if (!resizing) return;
-            const touch = e.touches[0];
-            moveResize(touch.clientX, touch.clientY);
+            moveResize(e.touches[0].clientX);
         }, { passive: true });
 
         window.addEventListener("touchend", endResize);
