@@ -76,6 +76,17 @@ body.preview-mode #scriptureContainer {
        some platforms — force it always visible in the preview so
        it's there from the very first verse, not just after scrolling. */
     overflow-y: scroll;
+
+    /*
+     * Without this, once this scrollable area reaches its top or
+     * bottom, the browser lets the leftover scroll motion "chain"
+     * to whatever's scrolled behind it — which, since the preview
+     * sits inside the Control page, meant scrolling the mouse wheel
+     * or trackpad over the preview could end up scrolling the
+     * Control page itself instead. This stops that leftover motion
+     * right here.
+     */
+    overscroll-behavior: contain;
 }
 
 body.preview-mode #scriptureContainer::-webkit-scrollbar {
