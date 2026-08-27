@@ -1,4 +1,4 @@
-console.log("APP.JS VERSION 20260827a");
+console.log("APP.JS VERSION 20260827b");
 
 document.addEventListener("DOMContentLoaded", () => {
     const prepareButton = document.getElementById("prepareButton");
@@ -1176,21 +1176,53 @@ focusReferenceInput();
      * its scrollbar) works too — either way, the resulting position
      * is broadcast to the real TV so both always match.
      */
-    function findVerseNearTop(doc, probeX, containerTop, maxProbeDepth) {
+    function findVerseNearTopFast(doc, containerRect) {
         // The exact top pixel can land in the blank margin gap
-        // between two verses rather than on actual verse text, so
-        // try a handful of points stepping down slightly until one
-        // of them actually lands on a verse.
-        const step = 6;
-        const limit = Math.min(60, maxProbeDepth);
+        // between two verses (or, for short passages, past the end
+        // of all the text) rather than on actual verse text, so try
+        // a handful of points — stepping down slightly, and across
+        // a few horizontal positions too — until one of them
+        // actually lands on a verse.
+        const stepY = 6;
+        const limitY = Math.min(60, containerRect.height);
+        const xFractions = [0.5, 0.25, 0.75];
 
-        for (let offset = 0; offset <= limit; offset += step) {
-            const el = doc.elementFromPoint(probeX, containerTop + offset);
-            const verse = el ? el.closest(".verse") : null;
-            if (verse) return verse;
+        for (let offsetY = 0; offsetY <= limitY; offsetY += stepY) {
+            for (const frac of xFractions) {
+                const x = containerRect.left + containerRect.width * frac;
+                const el = doc.elementFromPoint(x, containerRect.top + offsetY);
+                const verse = el ? el.closest(".verse") : null;
+                if (verse) return verse;
+            }
         }
 
         return null;
+    }
+
+    function findVerseNearTopReliable(container, containerTop) {
+        // Guaranteed-correct fallback for whenever the fast lookup
+        // above doesn't find anything (e.g. a very short passage,
+        // or an unusual layout) — checks every verse's position
+        // directly instead of guessing points to probe. Slower on a
+        // very long passage, but only ever runs as a backup, so
+        // correctness always wins over speed here.
+        const verses = container.querySelectorAll(".verse");
+        if (verses.length === 0) return null;
+
+        let anchorVerse = verses[0];
+
+        for (const verseEl of verses) {
+            const verseTop =
+                verseEl.getBoundingClientRect().top - containerTop;
+
+            if (verseTop <= 4) {
+                anchorVerse = verseEl;
+            } else {
+                break;
+            }
+        }
+
+        return anchorVerse;
     }
 
     function broadcastScrollAnchor(container) {
@@ -1203,24 +1235,18 @@ focusReferenceInput();
         // guaranteed identical in both places, so anchoring to the
         // actual verse — plus how far scrolled into it — is fully
         // immune to any width or font differences between them.
-        //
-        // Uses elementFromPoint (a single, native, optimized browser
-        // lookup) rather than manually checking every verse's
-        // position one by one — that approach got measurably slower
-        // the longer the passage was (a 176-verse psalm has to check
-        // up to 176 positions), and running that repeatedly during a
-        // scroll was the real cause of the stalling/stuttering.
-        // elementFromPoint costs about the same regardless of how
-        // long the passage is.
         const containerRect = container.getBoundingClientRect();
-        const probeX = containerRect.left + containerRect.width / 2;
 
-        const anchorVerse = findVerseNearTop(
-            container.ownerDocument,
-            probeX,
-            containerRect.top,
-            container.clientHeight
-        );
+        // Fast path first (cheap regardless of passage length), with
+        // a guaranteed-correct fallback if it doesn't find anything
+        // — that fallback is what was missing before: when the fast
+        // lookup failed (e.g. on a single-verse passage), nothing
+        // caught it, so it silently sent "no verse", which reset the
+        // real TV to the top and made it look like the buttons
+        // weren't doing anything at all.
+        const anchorVerse =
+            findVerseNearTopFast(container.ownerDocument, containerRect) ||
+            findVerseNearTopReliable(container, containerRect.top);
 
         if (!anchorVerse) {
             localStorage.setItem(
