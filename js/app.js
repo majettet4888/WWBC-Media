@@ -1,4 +1,4 @@
-console.log("APP.JS VERSION 20260815f");
+console.log("APP.JS VERSION 20260827a");
 
 document.addEventListener("DOMContentLoaded", () => {
     const prepareButton = document.getElementById("prepareButton");
@@ -971,6 +971,12 @@ focusReferenceInput();
         livePreviewFrame.style.pointerEvents = "auto";
     }
 
+    // Set explicitly at startup rather than leaving it to the
+    // implicit CSS default, so there's no ambiguity about whether
+    // the preview can receive scroll/click input from the very
+    // first moment it's shown.
+    restorePreviewInteraction();
+
     // Safety net: guarantee the iframe can never get permanently
     // stuck ignoring the mouse (which would make scrolling over the
     // preview leak through to the page behind it instead). The drag
@@ -1170,6 +1176,23 @@ focusReferenceInput();
      * its scrollbar) works too — either way, the resulting position
      * is broadcast to the real TV so both always match.
      */
+    function findVerseNearTop(doc, probeX, containerTop, maxProbeDepth) {
+        // The exact top pixel can land in the blank margin gap
+        // between two verses rather than on actual verse text, so
+        // try a handful of points stepping down slightly until one
+        // of them actually lands on a verse.
+        const step = 6;
+        const limit = Math.min(60, maxProbeDepth);
+
+        for (let offset = 0; offset <= limit; offset += step) {
+            const el = doc.elementFromPoint(probeX, containerTop + offset);
+            const verse = el ? el.closest(".verse") : null;
+            if (verse) return verse;
+        }
+
+        return null;
+    }
+
     function broadcastScrollAnchor(container) {
         // Sync by WHICH VERSE is at the top of the screen, not by a
         // raw pixel or percentage position. A percentage still broke
@@ -1180,9 +1203,26 @@ focusReferenceInput();
         // guaranteed identical in both places, so anchoring to the
         // actual verse — plus how far scrolled into it — is fully
         // immune to any width or font differences between them.
-        const verses = container.querySelectorAll(".verse");
+        //
+        // Uses elementFromPoint (a single, native, optimized browser
+        // lookup) rather than manually checking every verse's
+        // position one by one — that approach got measurably slower
+        // the longer the passage was (a 176-verse psalm has to check
+        // up to 176 positions), and running that repeatedly during a
+        // scroll was the real cause of the stalling/stuttering.
+        // elementFromPoint costs about the same regardless of how
+        // long the passage is.
+        const containerRect = container.getBoundingClientRect();
+        const probeX = containerRect.left + containerRect.width / 2;
 
-        if (verses.length === 0) {
+        const anchorVerse = findVerseNearTop(
+            container.ownerDocument,
+            probeX,
+            containerRect.top,
+            container.clientHeight
+        );
+
+        if (!anchorVerse) {
             localStorage.setItem(
                 "scrollPosition",
                 JSON.stringify({
@@ -1194,27 +1234,9 @@ focusReferenceInput();
             return;
         }
 
-        const containerTop = container.getBoundingClientRect().top;
-
-        let anchorVerse = verses[0];
-
-        for (const verseEl of verses) {
-            const verseTop =
-                verseEl.getBoundingClientRect().top - containerTop;
-
-            // Verses are in order top-to-bottom, so the last one
-            // whose top has scrolled up to (or past) the visible
-            // top edge is the one currently being read.
-            if (verseTop <= 4) {
-                anchorVerse = verseEl;
-            } else {
-                break;
-            }
-        }
-
         const anchorRect = anchorVerse.getBoundingClientRect();
         const anchorHeight = anchorRect.height || 1;
-        const offsetIntoVerse = containerTop - anchorRect.top;
+        const offsetIntoVerse = containerRect.top - anchorRect.top;
         const fractionIntoVerse = Math.max(
             0,
             Math.min(1, offsetIntoVerse / anchorHeight)
@@ -1284,7 +1306,7 @@ focusReferenceInput();
         const TAP_STEP = 250;
         const HOLD_SPEED_PX_PER_SEC = 380;
         const HOLD_START_DELAY_MS = 350;
-        const HOLD_BROADCAST_THROTTLE_MS = 300;
+        const HOLD_BROADCAST_THROTTLE_MS = 120;
 
         let holdTimeout = null;
         let animationFrameId = null;
@@ -1407,7 +1429,7 @@ focusReferenceInput();
         // (while the local preview itself still tracks every event
         // for its own smoothness) fixes that without adding any
         // noticeable lag.
-        const BROADCAST_THROTTLE_MS = 200;
+        const BROADCAST_THROTTLE_MS = 120;
         let lastBroadcastTime = 0;
         let pendingBroadcast = null;
 
@@ -1415,9 +1437,15 @@ focusReferenceInput();
             const now = Date.now();
             const elapsed = now - lastBroadcastTime;
 
+            // Deferred with setTimeout(0), same reasoning as the
+            // button-hold path: figuring out which verse is at the
+            // top does real work (checking element positions), and
+            // running that in the exact same instant as the native
+            // scroll motion is what caused the "stalls, then
+            // catches up" stutter during a trackpad/wheel scroll.
             if (elapsed >= BROADCAST_THROTTLE_MS) {
                 lastBroadcastTime = now;
-                broadcastScrollAnchor(container);
+                setTimeout(() => broadcastScrollAnchor(container), 0);
             } else if (!pendingBroadcast) {
                 pendingBroadcast = setTimeout(() => {
                     pendingBroadcast = null;
