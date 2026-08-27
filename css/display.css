@@ -111,6 +111,7 @@ body.preview-mode #scriptureContainer::-webkit-scrollbar-thumb {
 }
 
 .verse {
+    margin-top: 0;
     margin-bottom: 23px;
     padding-left: 1.8em;
     text-indent: -1.8em;
