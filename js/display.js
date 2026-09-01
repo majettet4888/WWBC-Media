@@ -4,7 +4,9 @@ console.log("DISPLAY.JS VERSION 1");
 // Control page (the live preview). Flag that here once, so CSS can
 // style a few things differently there (e.g. a larger, easier to
 // grab scrollbar) without affecting the real TV.
-if (window.self !== window.top) {
+const isPreview = window.self !== window.top;
+
+if (isPreview) {
     document.body.classList.add("preview-mode");
 }
 
@@ -103,6 +105,8 @@ function loadCurrentDisplayMode() {
 
     if (savedMode === "scripture") {
         showScriptureScreen();
+    } else if (savedMode === "hymnal") {
+        showHymnalScreen();
     } else {
         showWelcomeScreen();
     }
@@ -179,15 +183,58 @@ function loadScripture() {
  * Keeps this display's scroll position in sync with the Control
  * page's live preview — whichever one the operator interacts with
  * (the Up/Down buttons, or scrolling the preview itself directly)
- * updates a shared "which verse is at the top" value that this
- * display matches. This is deliberately anchored to the actual
- * verse (plus how far scrolled into it), not a raw pixel or
- * percentage position — the preview and this real screen wrap the
- * same text into a different number of lines (different available
- * width), so a percentage position doesn't reliably land on the
- * same verse in both places. The verse number itself is identical
- * either way, so anchoring to it is immune to that difference.
+ * broadcasts the preview's position, and this display matches it.
+ *
+ * The preview is now rendered at this screen's exact resolution
+ * (1920x1080) with an identical text column width, so both lay the
+ * passage out identically — same line breaks, same total scroll
+ * height. When that's confirmed (the sender's scrollHeight equals
+ * ours), the exact pixel scrollTop is copied over: a perfect,
+ * line-for-line match.
+ *
+ * If the layouts ever DO differ (e.g. a different font installed
+ * on the TV device wraps a line differently), the verse-anchor
+ * method is used instead: "which verse is at the top, and how far
+ * into it" — the verse number is identical in both places, so
+ * that lands on the right text regardless of layout differences.
  */
+function applyRemoteScroll(data) {
+    const scriptureContainer =
+        document.getElementById("scriptureContainer");
+
+    if (!scriptureContainer) return;
+
+    const hasPixelData =
+        typeof data.scrollTop === "number" &&
+        typeof data.scrollHeight === "number";
+
+    const layoutsMatch =
+        hasPixelData &&
+        Math.abs(scriptureContainer.scrollHeight - data.scrollHeight) <= 2;
+
+    if (layoutsMatch) {
+        scrollContainerTo(scriptureContainer, data.scrollTop);
+        return;
+    }
+
+    handleRemoteScrollAnchor(data.verseNumber, data.fractionIntoVerse);
+}
+
+/*
+ * Small moves (the Up/Down buttons, or the operator dragging the
+ * preview) glide smoothly so the TV doesn't visibly "step" between
+ * the throttled updates it receives; a big jump (a fresh passage,
+ * or catching up after a reload) goes straight there.
+ */
+function scrollContainerTo(container, top) {
+    const distance = Math.abs(container.scrollTop - top);
+
+    container.scrollTo({
+        top,
+        behavior: distance > 0 && distance < 400 ? "smooth" : "auto"
+    });
+}
+
 function handleRemoteScrollAnchor(verseNumber, fractionIntoVerse) {
     const scriptureContainer =
         document.getElementById("scriptureContainer");
@@ -226,8 +273,10 @@ function handleRemoteScrollAnchor(verseNumber, fractionIntoVerse) {
     const offsetWithinVerse =
         (fractionIntoVerse || 0) * (verseRect.height || 0);
 
-    scriptureContainer.scrollTop =
-        verseTopRelativeToContainer + offsetWithinVerse;
+    scrollContainerTo(
+        scriptureContainer,
+        verseTopRelativeToContainer + offsetWithinVerse
+    );
 }
 
 function formatVerseText(text, reference, verseNumber) {
@@ -394,17 +443,64 @@ function updateCountdown() {
     
 async function initializeDisplay() {
 
-    // Always start the display on the Welcome screen.
-    showWelcomeScreen();
-
     updateWelcomeDate();
     updateCountdown();
 
     await loadRedLetterData();
 
+    if (isPreview) {
+        // The preview must mirror whatever is ALREADY live — if the
+        // Control page is refreshed mid-service, the TV is still
+        // showing scripture, so the preview should come up on that
+        // same scripture at the same scroll position, not on Welcome.
+        loadCurrentDisplayMode();
+        restoreScrollFromStorage();
+    } else {
+        // The real TV always starts on the Welcome screen.
+        showWelcomeScreen();
+    }
+
     setInterval(updateCountdown, 1000);
 
     setupFullscreenPrompt();
+}
+
+function restoreScrollFromStorage() {
+    const stored = localStorage.getItem("scrollPosition");
+    if (!stored) return;
+
+    try {
+        const data = JSON.parse(stored);
+
+        // Wait one frame so the freshly-rendered scripture has a
+        // real layout to measure against before scrolling it.
+        requestAnimationFrame(() => {
+            const container =
+                document.getElementById("scriptureContainer");
+            if (!container) return;
+
+            // Instant, not smooth — this is a restore, not a move.
+            applyRemoteScrollInstant(container, data);
+        });
+    } catch (error) {
+        // Nothing usable saved — just stay at the top.
+    }
+}
+
+function applyRemoteScrollInstant(container, data) {
+    const hasPixelData =
+        typeof data.scrollTop === "number" &&
+        typeof data.scrollHeight === "number";
+
+    if (
+        hasPixelData &&
+        Math.abs(container.scrollHeight - data.scrollHeight) <= 2
+    ) {
+        container.scrollTop = data.scrollTop;
+        return;
+    }
+
+    handleRemoteScrollAnchor(data.verseNumber, data.fractionIntoVerse);
 }
 
 /*
@@ -527,13 +623,20 @@ window.addEventListener("storage", async (event) => {
         loadHymn();
     }
 
-    if (event.key === "scrollPosition" && event.newValue !== null) {
+    if (
+        event.key === "scrollPosition" &&
+        event.newValue !== null &&
+        !isPreview
+    ) {
+        // Only the real TV follows these. The preview is where the
+        // position CAME from — it's a separate document, so it
+        // receives its own broadcasts too, and previously it would
+        // re-snap itself to the rounded-off anchor position mid-
+        // scroll, fighting its own smooth motion and then sending
+        // that corrected position out again. That loop was a big
+        // part of the preview and TV never quite agreeing.
         try {
-            const data = JSON.parse(event.newValue);
-            handleRemoteScrollAnchor(
-                data.verseNumber,
-                data.fractionIntoVerse
-            );
+            applyRemoteScroll(JSON.parse(event.newValue));
         } catch (error) {
             console.error("Unable to read scroll position.", error);
         }

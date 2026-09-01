@@ -936,7 +936,9 @@ focusReferenceInput();
     const livePreviewFrame =
         document.getElementById("livePreviewFrame");
 
-    const PREVIEW_NATIVE_WIDTH = 1000; // matches .live-preview-frame width
+    // Matches .live-preview-frame width — the TV's real resolution,
+    // so the preview lays text out exactly as the TV does.
+    const PREVIEW_NATIVE_WIDTH = 1920;
 
     function applyPreviewSizing() {
         // Width alone drives the scale — height is locked to a
@@ -1226,15 +1228,27 @@ focusReferenceInput();
     }
 
     function broadcastScrollAnchor(container) {
-        // Sync by WHICH VERSE is at the top of the screen, not by a
-        // raw pixel or percentage position. A percentage still broke
-        // because the preview and the real TV wrap the same text
-        // into a different number of lines (different available
-        // width), so an identical percentage landed on a different
-        // verse in each. Verse numbers are the one thing that's
-        // guaranteed identical in both places, so anchoring to the
-        // actual verse — plus how far scrolled into it — is fully
-        // immune to any width or font differences between them.
+        // Two things are sent together:
+        //
+        // 1. The exact pixel position (scrollTop) plus the total
+        //    scroll height. The preview is rendered at the TV's real
+        //    resolution with an identical text column, so the TV's
+        //    layout is the same — it checks the scrollHeight matches
+        //    its own and, if so, copies scrollTop exactly. Perfect
+        //    line-for-line sync.
+        //
+        // 2. WHICH VERSE is at the top of the screen (plus how far
+        //    into it), as a fallback the TV uses only if its layout
+        //    turns out to differ (e.g. a different font on that
+        //    device wrapping a line differently). Verse numbers are
+        //    identical everywhere, so this always lands on the right
+        //    text even then.
+        const pixelPosition = {
+            scrollTop: container.scrollTop,
+            scrollHeight: container.scrollHeight,
+            clientHeight: container.clientHeight
+        };
+
         const containerRect = container.getBoundingClientRect();
 
         // Fast path first (cheap regardless of passage length), with
@@ -1252,6 +1266,7 @@ focusReferenceInput();
             localStorage.setItem(
                 "scrollPosition",
                 JSON.stringify({
+                    ...pixelPosition,
                     verseNumber: null,
                     fractionIntoVerse: 0,
                     ts: Date.now()
@@ -1277,6 +1292,7 @@ focusReferenceInput();
         localStorage.setItem(
             "scrollPosition",
             JSON.stringify({
+                ...pixelPosition,
                 verseNumber,
                 fractionIntoVerse,
                 ts: Date.now()
@@ -1784,6 +1800,13 @@ window.addEventListener(
 
 updateInitialStatus();
 renderCountdownStatus();
+
+// If scripture is already live (e.g. this page was refreshed mid-
+// service), bring the preview up right away so it's mirroring the
+// TV from the start rather than waiting for the next "Display".
+if (localStorage.getItem("displayMode") === "scripture") {
+    showLivePreview();
+}
 
 /*
  * The countdown itself runs on the Display page (display.js),
