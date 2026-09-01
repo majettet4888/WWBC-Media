@@ -4,11 +4,84 @@ console.log("DISPLAY.JS VERSION 1");
 // Control page (the live preview). Flag that here once, so CSS can
 // style a few things differently there (e.g. a larger, easier to
 // grab scrollbar) without affecting the real TV.
-const isPreview = window.self !== window.top;
+const pageParams = new URLSearchParams(window.location.search);
+const isFramed = window.self !== window.top;
 
-if (isPreview) {
+/*
+ * TEST MODE — open display.html?test on any computer to see exactly
+ * what the TV shows, without a TV and without going fullscreen.
+ * The real page renders at true TV size (1920x1080) inside a frame
+ * and is shrunk to fit whatever size the window is, so line
+ * wrapping and scrolling match the TV precisely even in a small,
+ * side-by-side window. Handy for checking preview/TV sync at home.
+ */
+const isTestHarness = pageParams.has("test") && !isFramed;
+
+// The mirrored copy inside the Control page's live preview is
+// framed too — but so is the TV copy inside the test harness. The
+// harness marks its frame with ?tv so it behaves as the real TV
+// (follows scroll broadcasts) rather than as the preview.
+const isPreview = isFramed && !pageParams.has("tv");
+
+if (isTestHarness) {
+    setupTestHarness();
+} else if (isPreview) {
     document.body.classList.add("preview-mode");
 }
+
+function setupTestHarness() {
+    const TV_WIDTH = 1920;
+    const TV_HEIGHT = 1080;
+
+    document.title = "WWBC Display — TEST MODE";
+    document.body.className = "";
+    document.body.style.cssText =
+        "margin:0; background:#111; overflow:hidden;";
+    document.body.innerHTML = "";
+
+    const label = document.createElement("div");
+    label.textContent =
+        "TEST MODE — showing the TV at true 1920×1080, scaled to fit. " +
+        "Remove ?test from the address for the real display.";
+    label.style.cssText =
+        "position:fixed; top:0; left:0; right:0; z-index:10; " +
+        "padding:6px 12px; font:bold 13px Arial, sans-serif; " +
+        "color:#111; background:#d4af37; text-align:center;";
+    document.body.appendChild(label);
+
+    const frame = document.createElement("iframe");
+    frame.title = "TV";
+    // Keep the same ?v= cache tag this page was loaded with.
+    const v = pageParams.get("v");
+    frame.src = "display.html?tv=1" + (v ? `&v=${encodeURIComponent(v)}` : "");
+    frame.style.cssText =
+        `border:none; width:${TV_WIDTH}px; height:${TV_HEIGHT}px; ` +
+        "position:absolute; transform-origin:top left; " +
+        "box-shadow:0 0 40px rgba(0,0,0,0.8);";
+    document.body.appendChild(frame);
+
+    function fit() {
+        const labelHeight = label.offsetHeight;
+        const availW = window.innerWidth;
+        const availH = window.innerHeight - labelHeight;
+        const scale = Math.min(availW / TV_WIDTH, availH / TV_HEIGHT);
+
+        frame.style.transform = `scale(${scale})`;
+        frame.style.left =
+            `${Math.max(0, (availW - TV_WIDTH * scale) / 2)}px`;
+        frame.style.top =
+            `${labelHeight + Math.max(0, (availH - TV_HEIGHT * scale) / 2)}px`;
+    }
+
+    fit();
+    window.addEventListener("resize", fit);
+}
+
+if (!isTestHarness) {
+    runDisplay();
+}
+
+function runDisplay() {
 
 let redLetterVerses = {};
 
@@ -448,11 +521,12 @@ async function initializeDisplay() {
 
     await loadRedLetterData();
 
-    if (isPreview) {
+    if (isFramed) {
         // The preview must mirror whatever is ALREADY live — if the
         // Control page is refreshed mid-service, the TV is still
         // showing scripture, so the preview should come up on that
         // same scripture at the same scroll position, not on Welcome.
+        // (The test-mode TV frame does the same, for convenience.)
         loadCurrentDisplayMode();
         restoreScrollFromStorage();
     } else {
@@ -656,3 +730,5 @@ window.addEventListener("storage", async (event) => {
 });
 
 initializeDisplay();
+
+} // end runDisplay
