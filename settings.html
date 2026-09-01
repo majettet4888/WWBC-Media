@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>WWBC Settings</title>
+
+    <link rel="stylesheet" href="css/style.css?v=20260901j">
+    <link rel="stylesheet" href="css/settings.css?v=20260901j">
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="content">
+
+        <h1>Settings</h1>
+
+        <!-- ================= Welcome Screen ================= -->
+        <section class="settings-section">
+
+            <div class="settings-section-title">Welcome Screen</div>
+            <div class="settings-section-help">
+                Pick the occasion, adjust the wording if you like, then
+                <strong>Save &amp; Apply to TV</strong>. The preview below
+                updates as you type.
+            </div>
+
+            <div class="occasion-row" id="occasionRow">
+                <button type="button" class="occasion-chip" data-occasion="normal">Normal Sunday</button>
+                <button type="button" class="occasion-chip" data-occasion="foundersDay">Founders' Day</button>
+                <button type="button" class="occasion-chip" data-occasion="pastorAppreciation">Pastor Appreciation</button>
+                <button type="button" class="occasion-chip" data-occasion="thanksgiving">Thanksgiving</button>
+                <button type="button" class="occasion-chip" data-occasion="christmas">Christmas</button>
+            </div>
+
+            <div class="welcome-preview-wrap">
+                <iframe id="welcomePreviewFrame" class="welcome-preview-frame"
+                        src="display.html?welcome=1&v=20260901j"
+                        title="Welcome screen preview"></iframe>
+            </div>
+
+            <div class="settings-grid">
+
+                <label class="settings-field">
+                    <span>Main line</span>
+                    <input type="text" id="welcomeHeadingInput" maxlength="40" placeholder="Welcome">
+                </label>
+
+                <label class="settings-field">
+                    <span>Second line</span>
+                    <input type="text" id="welcomeSubheadingInput" maxlength="60" placeholder="Sunday Worship Service">
+                </label>
+
+                <label class="settings-field">
+                    <span>Theme (optional)</span>
+                    <input type="text" id="welcomeThemeMainInput" maxlength="40" placeholder="e.g. Praise Him Anyhow">
+                </label>
+
+                <label class="settings-field">
+                    <span>Theme tagline (optional)</span>
+                    <input type="text" id="welcomeThemeSubInput" maxlength="60" placeholder="e.g. (Ain't Nobody God but God!)">
+                </label>
+
+                <div class="settings-field settings-field-wide">
+                    <span>Background</span>
+
+                    <div class="settings-bg-buttons">
+                        <button id="welcomeBgArtworkButton" type="button">Occasion Artwork</button>
+                        <button id="welcomeBgUseDefaultButton" type="button">Church Photo</button>
+                        <label class="settings-file-button">
+                            Choose Photo…
+                            <input type="file" id="welcomeBgFileInput" accept="image/*" style="display:none;">
+                        </label>
+                    </div>
+
+                    <div id="welcomeBgStatus" class="settings-bg-status"></div>
+                </div>
+
+                <label class="settings-field">
+                    <span>Text color</span>
+                    <select id="welcomeTextStyleSelect">
+                        <option value="light">White text (for dark photos)</option>
+                        <option value="dark">Dark text (for light backgrounds)</option>
+                    </select>
+                </label>
+
+            </div>
+
+            <div class="settings-actions">
+                <button id="welcomeSettingsSaveButton" type="button">Save &amp; Apply to TV</button>
+                <button id="welcomeSettingsResetButton" type="button">Reset to Normal Sunday</button>
+            </div>
+
+            <div id="settingsStatus" class="settings-status"></div>
+
+        </section>
+
+    </div>
+
+    <div class="bottom-actions">
+        <button id="homeButton" onclick="location.href='index.html'">
+            ⬅ Home
+        </button>
+        <button onclick="location.href='scripture.html'">
+            📖 Media Control
+        </button>
+    </div>
+
+</div>
+
+<script src="js/settings.js?v=20260901j"></script>
+
+</body>
+</html>
