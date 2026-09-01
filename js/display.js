@@ -23,6 +23,12 @@ const isTestHarness = pageParams.has("test") && !isFramed;
 // (follows scroll broadcasts) rather than as the preview.
 const isPreview = isFramed && !pageParams.has("tv");
 
+// The Settings page embeds this page with ?welcome to show how the
+// Welcome screen will look — that copy stays on the Welcome screen
+// no matter what's live, and can be sent draft settings to preview
+// before they're saved.
+const isSettingsPreview = isFramed && pageParams.has("welcome");
+
 if (isTestHarness) {
     setupTestHarness();
 } else if (isPreview) {
@@ -377,6 +383,175 @@ function formatVerseText(text, reference, verseNumber) {
     );
 }
 
+/*
+ * Welcome screen wording + background, as set from the Control
+ * page's "Welcome Settings" panel (for Founders Day and the like).
+ * Nothing saved = the normal built-in text and church photo.
+ */
+let previewSettingsOverride = null;
+
+function applyWelcomeSettings() {
+    let settings = {};
+
+    if (previewSettingsOverride) {
+        settings = previewSettingsOverride;
+    } else {
+        try {
+            settings = JSON.parse(
+                localStorage.getItem("welcomeSettings") || "{}"
+            );
+        } catch (error) {
+            settings = {};
+        }
+    }
+
+    const heading = document.querySelector("#welcomeContent h2");
+    const subheading = document.querySelector("#welcomeContent h3");
+
+    if (heading) {
+        heading.textContent = settings.heading || "Welcome";
+    }
+
+    if (subheading) {
+        subheading.textContent =
+            settings.subheading || "Sunday Worship Service";
+    }
+
+    const themeBlock = document.getElementById("welcomeTheme");
+    const themeMain = document.getElementById("welcomeThemeMain");
+    const themeSub = document.getElementById("welcomeThemeSub");
+
+    if (themeBlock && themeMain && themeSub) {
+        const main = (settings.themeMain || "").trim();
+        const sub = (settings.themeSub || "").trim();
+
+        // Like the program: "PRAISE HIM" in capitals with the last
+        // word ("Anyhow") set apart in script. The flourish only
+        // shows in the light/Founders style; otherwise it's plain.
+        themeMain.textContent = "";
+        const words = main.split(/\s+/).filter(Boolean);
+        // Stacked like the program: PRAISE / HIM / Anyhow — each
+        // leading word on its own line in heavy capitals, the last
+        // word in brush script.
+        if (words.length > 1) {
+            words.slice(0, -1).forEach((word) => {
+                const line = document.createElement("span");
+                line.className = "theme-lead";
+                line.textContent = word;
+                themeMain.appendChild(line);
+            });
+            const flourish = document.createElement("span");
+            flourish.className = "theme-flourish";
+            flourish.textContent = words[words.length - 1];
+            themeMain.appendChild(flourish);
+        } else {
+            themeMain.textContent = main;
+        }
+        themeSub.textContent = sub;
+        themeMain.style.display = main ? "" : "none"; // "" = CSS (flex column)
+        themeSub.style.display = sub ? "block" : "none";
+        themeBlock.style.display = main || sub ? "flex" : "none";
+    }
+
+    // Which picture: a built-in preset, a custom uploaded photo,
+    // or (nothing set) the normal church photo.
+    // Each occasion looks for its own artwork in the images folder.
+    // If that file hasn't been added yet, the normal church photo is
+    // used instead (checked by actually trying to load the image).
+    const PRESET_BACKGROUNDS = {
+        foundersDay: "images/founders-day-bg.jpg",
+        pastorAppreciation: "images/pastor-appreciation-bg.jpg",
+        thanksgiving: "images/thanksgiving-bg.jpg",
+        christmas: "images/christmas-bg.jpg"
+    };
+
+    let backgroundUrl = "";
+
+    if (settings.preset && PRESET_BACKGROUNDS[settings.preset]) {
+        backgroundUrl = PRESET_BACKGROUNDS[settings.preset];
+    } else if (settings.backgroundImage) {
+        backgroundUrl = settings.backgroundImage;
+    }
+
+    setWelcomeBackground(backgroundUrl);
+
+    // Light backgrounds get dark text (and no darkening overlay).
+    document.body.classList.toggle(
+        "welcome-light",
+        settings.textStyle === "dark"
+    );
+
+    // Per-occasion color tweaks (e.g. Founders' Day letterhead colors)
+    // hang off a body class named after the occasion.
+    [...document.body.classList]
+        .filter((c) => c.startsWith("welcome-occasion-"))
+        .forEach((c) => document.body.classList.remove(c));
+    const occasionKey = settings.occasion || settings.preset;
+    if (occasionKey) {
+        document.body.classList.add(`welcome-occasion-${occasionKey}`);
+    }
+
+    // Long lines (e.g. "Celebrating Annual Founders' Day – Year 23")
+    // are kept on ONE line by shrinking just that line to fit,
+    // rather than wrapping. Runs after fonts load too, since web
+    // fonts can be wider than the fallback they replace.
+    fitWelcomeLines();
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(fitWelcomeLines);
+    }
+}
+
+let welcomeBackgroundRequest = 0;
+
+function setWelcomeBackground(url) {
+    const requestId = ++welcomeBackgroundRequest;
+    const root = document.documentElement;
+
+    if (!url) {
+        root.style.removeProperty("--welcome-bg");
+        return;
+    }
+
+    // A relative path inside a CSS variable is resolved against the
+    // stylesheet's folder (css/), not this page — so make it absolute
+    // first. Data URLs pass through unchanged.
+    const absoluteUrl = new URL(url, document.baseURI).href;
+
+    const probe = new Image();
+    probe.onload = () => {
+        if (requestId !== welcomeBackgroundRequest) return;
+        root.style.setProperty("--welcome-bg", `url("${absoluteUrl}")`);
+    };
+    probe.onerror = () => {
+        if (requestId !== welcomeBackgroundRequest) return;
+        // Artwork not uploaded (yet) — fall back to the church photo.
+        root.style.removeProperty("--welcome-bg");
+    };
+    probe.src = absoluteUrl;
+}
+
+function fitWelcomeLines() {
+    const lines = [
+        document.querySelector("#welcomeContent h3"),
+        document.getElementById("welcomeThemeMain")
+    ];
+
+    for (const el of lines) {
+        if (!el || !el.offsetParent) continue;
+
+        el.style.fontSize = "";
+        const maxWidth = el.parentElement.clientWidth;
+        let size = parseFloat(getComputedStyle(el).fontSize);
+
+        // Shrink in small steps until it fits (floor at 60% size).
+        const minSize = size * 0.6;
+        while (el.scrollWidth > maxWidth && size > minSize) {
+            size -= 2;
+            el.style.fontSize = `${size}px`;
+        }
+    }
+}
+
 function updateWelcomeDate() {
     const today = new Date();
 
@@ -516,12 +691,15 @@ function updateCountdown() {
     
 async function initializeDisplay() {
 
+    applyWelcomeSettings();
     updateWelcomeDate();
     updateCountdown();
 
     await loadRedLetterData();
 
-    if (isFramed) {
+    if (isSettingsPreview) {
+        showWelcomeScreen();
+    } else if (isFramed) {
         // The preview must mirror whatever is ALREADY live — if the
         // Control page is refreshed mid-service, the TV is still
         // showing scripture, so the preview should come up on that
@@ -697,6 +875,10 @@ window.addEventListener("storage", async (event) => {
         loadHymn();
     }
 
+    if (event.key === "welcomeSettingsUpdated") {
+        applyWelcomeSettings();
+    }
+
     if (
         event.key === "scrollPosition" &&
         event.newValue !== null &&
@@ -716,7 +898,7 @@ window.addEventListener("storage", async (event) => {
         }
     }
 
-    if (event.key === "displayMode") {
+    if (event.key === "displayMode" && !isSettingsPreview) {
         console.log("Display mode changed:", event.newValue);
 
         if (event.newValue === "scripture") {
@@ -726,6 +908,18 @@ window.addEventListener("storage", async (event) => {
         } else if (event.newValue === "welcome") {
             showWelcomeScreen();
         }
+    }
+});
+
+// Draft settings from the Settings page (preview before saving).
+window.addEventListener("message", (event) => {
+    if (!isSettingsPreview) return;
+    if (event.origin !== window.location.origin) return;
+
+    const data = event.data || {};
+    if (data.type === "previewWelcomeSettings") {
+        previewSettingsOverride = data.settings || null;
+        applyWelcomeSettings();
     }
 });
 
