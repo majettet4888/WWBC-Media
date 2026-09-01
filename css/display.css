@@ -63,19 +63,39 @@ body.display-page {
     padding: 45px 55px 70px 55px;
 
     box-sizing: border-box;
+
+    /*
+     * No scrollbar on the real TV. Nobody scrolls the TV directly
+     * (the Control page drives it), and a scrollbar's width varies
+     * by platform — which would make the text column a different
+     * width on the TV than in the preview and break the line-for-
+     * line match. Hiding it makes the TV's text width a known,
+     * fixed number that the preview below reproduces exactly.
+     */
+    scrollbar-width: none;
+}
+
+#scriptureContainer::-webkit-scrollbar {
+    display: none;
 }
 
 /*
- * A normal scrollbar is scaled down along with everything else in
- * the mini preview, making it nearly impossible to grab. Make it
- * deliberately oversized here so it's still usable at preview size
- * — this only applies inside the preview, never on the real TV.
+ * The preview DOES need a scrollbar (the operator can drag it), and
+ * a normal one scaled down with everything else is nearly impossible
+ * to grab — so it's deliberately oversized. To keep the text column
+ * exactly the same width as on the TV, the scrollbar takes the place
+ * of the TV's right padding: 55px scrollbar + 0 right padding here
+ * = 0 scrollbar + 55px right padding on the TV. Same text width,
+ * same line breaks, same scroll positions.
  */
 body.preview-mode #scriptureContainer {
     /* "auto" only shows the scrollbar once you interact with it on
        some platforms — force it always visible in the preview so
        it's there from the very first verse, not just after scrolling. */
     overflow-y: scroll;
+    scrollbar-width: auto;
+
+    padding-right: 0;
 
     /*
      * Without this, once this scrollable area reaches its top or
@@ -90,7 +110,8 @@ body.preview-mode #scriptureContainer {
 }
 
 body.preview-mode #scriptureContainer::-webkit-scrollbar {
-    width: 46px;
+    display: block;
+    width: 55px; /* must equal #scriptureContainer's right padding */
 }
 
 body.preview-mode #scriptureContainer::-webkit-scrollbar-track {
@@ -99,8 +120,8 @@ body.preview-mode #scriptureContainer::-webkit-scrollbar-track {
 
 body.preview-mode #scriptureContainer::-webkit-scrollbar-thumb {
     background: #666;
-    border-radius: 8px;
-    border: 6px solid #e0e0e0;
+    border-radius: 10px;
+    border: 8px solid #e0e0e0;
 }
 
 /* Scripture text */
@@ -108,6 +129,17 @@ body.preview-mode #scriptureContainer::-webkit-scrollbar-thumb {
     font-size: clamp(64px, 4.6vw, 122px);
     line-height: 1.3;
     font-weight: normal;
+
+    /*
+     * Pin the text column to exactly what a 1920px TV gives it
+     * (1920 minus 55px padding each side). This makes the line
+     * breaks independent of whether a scrollbar takes up space or
+     * not (that differs by platform, and the preview's oversized
+     * scrollbar vs. the TV's hidden one) — so the preview and the
+     * TV wrap every line identically, which is what keeps their
+     * scroll positions in lockstep.
+     */
+    max-width: 1810px;
 }
 
 .verse {

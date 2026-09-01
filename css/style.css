@@ -298,10 +298,20 @@ button:disabled {
      * the already-scaled content is visible at once, so dragging
      * the box taller reveals more lines rather than distorting text).
      */
-    transform: scale(var(--preview-scale, 0.34));
+    transform: scale(var(--preview-scale, 0.177));
     transform-origin: top left;
-    width: 1000px;
-    height: 562px;
+
+    /*
+     * Rendered at the TV's REAL resolution (1920x1080), then scaled
+     * down. This is what makes the preview a true mirror: the
+     * Display page sizes its text with vw units and fixed-pixel
+     * padding, so at any other width the text wraps into different
+     * lines and a different number of lines fit on screen — which
+     * is exactly why the preview and TV kept drifting apart. At the
+     * identical size, every line break and scroll position matches.
+     */
+    width: 1920px;
+    height: 1080px;
 }
 
 .preview-resize-handle {
