@@ -665,6 +665,158 @@ button:disabled {
 }
 
 /*
+ * Welcome Screen Settings panel — change the Welcome screen's
+ * wording and background photo for special occasions (Founders
+ * Day, Easter, etc.) without touching any files. Reuses the
+ * confirm-overlay look so it matches the rest of the page.
+ */
+.settings-box {
+    max-width: 460px;
+    text-align: left;
+
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.settings-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #1d3557;
+    text-align: center;
+    margin-bottom: 18px;
+}
+
+.settings-field {
+    display: block;
+    margin-bottom: 16px;
+}
+
+.settings-field > span {
+    display: block;
+    font-size: 13px;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 6px;
+}
+
+.settings-field select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 10px;
+    font-size: 15px;
+    border: 1px solid #bdbdbd;
+    border-radius: 6px;
+    background: white;
+}
+
+.settings-bg-buttons button.settings-bg-selected {
+    outline: 3px solid #d4af37;
+    outline-offset: -3px;
+}
+
+#welcomeBgFoundersDayButton {
+    background: #f5f5f5;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+#welcomeBgFoundersDayButton:hover {
+    background: #e9e9e9;
+}
+
+.settings-field input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    font-size: 17px;
+    border: 1px solid #bdbdbd;
+    border-radius: 6px;
+}
+
+.settings-bg-preview {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+
+    background-color: #333;
+    background-size: cover;
+    background-position: center;
+
+    margin-bottom: 8px;
+}
+
+.settings-bg-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.settings-bg-buttons button,
+.settings-file-button {
+    flex: 1 1 0;
+    margin: 0;
+    padding: 10px 8px;
+    font-size: 14px;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.settings-file-button {
+    background-color: #1d3557;
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.settings-file-button:hover {
+    background-color: #274b7a;
+}
+
+#welcomeBgUseDefaultButton {
+    background: #f5f5f5;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+#welcomeBgUseDefaultButton:hover {
+    background: #e9e9e9;
+}
+
+.settings-bg-status {
+    font-size: 12px;
+    color: #777;
+    margin-top: 6px;
+    min-height: 14px;
+}
+
+#welcomeSettingsSaveButton {
+    background-color: #d4af37;
+    color: #000;
+}
+
+#welcomeSettingsSaveButton:hover {
+    background-color: #c49b1f;
+}
+
+#welcomeSettingsResetButton {
+    background-color: #f5f5f5;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+#welcomeSettingsResetButton:hover {
+    background-color: #e9e9e9;
+}
+
+#welcomeSettingsCancelButton {
+    background-color: #999999;
+}
+
+#welcomeSettingsCancelButton:hover {
+    background-color: #808080;
+}
+
+/*
  * Browse Bible picker: tap a book, then a chapter, then a verse.
  * Reuses the same overlay pattern as the New Service confirmation
  * (in-page, never a native dialog).
