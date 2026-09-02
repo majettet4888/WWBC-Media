@@ -6,7 +6,7 @@
  * "welcomeSettingsUpdated" changes, so Save applies instantly.
  *
  *   {
- *     occasion:        "normal" | "foundersDay" | "pastorAppreciation" | "thanksgiving" | "christmas",
+ *     occasion:        "normal" | "foundersDay" | "pastorAppreciation" | "thanksgiving" | "christmas" | "newYearsEve" | "newYearsDay",
  *     heading:         main line, e.g. "Welcome"
  *     subheading:      second line, e.g. "Sunday Worship Service"
  *     themeMain:       optional theme, e.g. "Praise Him Anyhow"
@@ -76,6 +76,26 @@ document.addEventListener("DOMContentLoaded", () => {
             themeMain: "",
             themeSub: "",
             artwork: "images/christmas-bg.jpg",
+            textStyle: "dark"
+        },
+        newYearsEve: {
+            label: "New Year's Eve",
+            heading: "Welcome",
+            subheading: "New Year's Eve Service",
+            themeMain: "",
+            themeSub: "",
+            artwork: "images/new-years-eve-bg.jpg",
+            textStyle: "dark"
+        },
+        newYearsDay: {
+            label: "New Year's Day",
+            heading: "Welcome",
+            get subheading() {
+                return `New Year's Day ${new Date().getFullYear()}`;
+            },
+            themeMain: "",
+            themeSub: "",
+            artwork: "images/new-years-day-bg.jpg",
             textStyle: "dark"
         }
     };

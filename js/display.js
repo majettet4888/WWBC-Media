@@ -451,6 +451,7 @@ function applyWelcomeSettings() {
         themeMain.style.display = main ? "" : "none"; // "" = CSS (flex column)
         themeSub.style.display = sub ? "block" : "none";
         themeBlock.style.display = main || sub ? "flex" : "none";
+        document.body.classList.toggle("welcome-has-theme", !!(main || sub));
     }
 
     // Which picture: a built-in preset, a custom uploaded photo,
@@ -462,7 +463,9 @@ function applyWelcomeSettings() {
         foundersDay: "images/founders-day-bg.jpg",
         pastorAppreciation: "images/pastor-appreciation-bg.jpg",
         thanksgiving: "images/thanksgiving-bg.jpg",
-        christmas: "images/christmas-bg.jpg"
+        christmas: "images/christmas-bg.jpg",
+        newYearsEve: "images/new-years-eve-bg.jpg",
+        newYearsDay: "images/new-years-day-bg.jpg"
     };
 
     let backgroundUrl = "";
@@ -667,6 +670,7 @@ function updateCountdown() {
     if (!active || !endTime) {
         countdownLabel.classList.add("countdown-slot-hidden");
         countdown.classList.add("countdown-slot-hidden");
+        document.body.classList.remove("countdown-running");
         return;
     }
 
@@ -674,6 +678,7 @@ function updateCountdown() {
 
     if (remainingMs <= 0) {
         countdown.textContent = "00:00";
+        document.body.classList.remove("countdown-running");
 
         localStorage.setItem("countdownActive", "false");
         localStorage.removeItem("countdownEndTime");
@@ -684,6 +689,7 @@ function updateCountdown() {
 
     countdownLabel.classList.remove("countdown-slot-hidden");
     countdown.classList.remove("countdown-slot-hidden");
+    document.body.classList.add("countdown-running");
 
     countdown.textContent = formatDuration(remainingMs);
 }
