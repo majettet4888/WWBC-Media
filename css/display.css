@@ -183,7 +183,7 @@ body.preview-mode #scriptureContainer::-webkit-scrollbar-thumb {
     /* Tiny top/bottom margin so the layout uses nearly the full
        screen height: church name right at the top, timer (when
        running) right at the bottom, everything spread evenly. */
-    padding: 0.6vh 3vw;
+    padding: 2.2vh 3vw;
     box-sizing: border-box;
 
     text-align: center;
@@ -194,7 +194,7 @@ body.preview-mode #scriptureContainer::-webkit-scrollbar-thumb {
 #welcomeContent {
     width: 100%;
     max-width: 1720px;
-    height: 98.8vh;
+    height: 95.6vh;
 
     display: flex;
     flex-direction: column;
@@ -485,6 +485,9 @@ body.welcome-light #welcomeContent h2 {
     font-family: "Great Vibes", "Brush Script MT", cursive;
     font-weight: 400;
     line-height: 1;
+    /* Great Vibes draws small for its size — scaled up so "Welcome"
+       looks as big as the original's. */
+    font-size: clamp(98px, 11.3vw, 182px);
 
     /* The script's tall flourishes (the "W") reach above its line
        box, so it looks crowded against the church name even when the
@@ -496,6 +499,7 @@ body.welcome-light #welcomeContent h2 {
 body.welcome-light #welcomeContent h3 {
     font-family: "Cormorant Garamond", Georgia, serif;
     font-weight: 700;
+    font-size: clamp(82px, 7.1vw, 117px); /* ≈ original's visual size */
 }
 
 /* Theme — black on the light background, exactly like the program */
@@ -528,11 +532,11 @@ body.welcome-has-theme.countdown-running #countdownArea {
 }
 
 body.welcome-has-theme.countdown-running #welcomeThemeMain {
-    font-size: clamp(48px, 4vw, 72px);
+    font-size: clamp(44px, 3.5vw, 62px);
 }
 
 body.welcome-has-theme.countdown-running #welcomeThemeSub {
-    font-size: clamp(28px, 2.3vw, 40px);
+    font-size: clamp(26px, 2vw, 36px);
 }
 
 body.welcome-has-theme.countdown-running #welcomeContent h2 {
@@ -545,6 +549,10 @@ body.welcome-light #countdownLabel {
     font-family: "Cormorant Garamond", Georgia, serif;
     font-style: italic;
     font-weight: 600;
+}
+
+body.welcome-light #welcomeDate {
+    font-size: clamp(64px, 5.9vw, 97px); /* ≈ original's visual size */
 }
 
 /* Cormorant's numerals "hang" below the line by default (old-style
