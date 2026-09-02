@@ -504,8 +504,10 @@ body.welcome-light #welcomeContent h2 {
 body.welcome-light #welcomeContent h3 {
     font-family: "Cormorant Garamond", Georgia, serif;
     font-weight: 700;
-    font-size: clamp(90px, 8vw, 150px);
-    -webkit-text-stroke: 0.018em currentColor;
+    /* Fixed size — the largest this 43-character line can be on one
+       line at 1920px wide in this font (≈ 1700px wide at 88px). */
+    font-size: clamp(60px, 4.6vw, 88px);
+    -webkit-text-stroke: 0.02em currentColor;
     paint-order: stroke fill;
 }
 
