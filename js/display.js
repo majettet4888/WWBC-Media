@@ -590,10 +590,24 @@ function fitWelcomeLines() {
         document.getElementById("welcomeThemeMain")
     ];
 
+    // Safety only: shrink a line if it is genuinely too wide. In the
+    // decorative style this must NOT run until the real font is on
+    // screen — measuring the wider fallback font shrank the Founders'
+    // Day line to half size on the TV. So it waits for confirmation
+    // that the font is actually loaded before touching anything.
+    const light = document.body.classList.contains("welcome-light");
+    const fontsConfirmed =
+        !light ||
+        (document.fonts &&
+            document.fonts.check('700 88px "Cormorant Garamond"') &&
+            document.fonts.check('900 88px "Playfair Display"'));
+
     for (const el of lines) {
         if (!el || !el.offsetParent) continue;
 
         el.style.fontSize = "";
+        if (!fontsConfirmed) continue;
+
         const maxWidth = el.parentElement.clientWidth;
         const base = parseFloat(getComputedStyle(el).fontSize);
         const width = el.scrollWidth;
