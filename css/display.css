@@ -180,7 +180,10 @@ body.preview-mode #scriptureContainer::-webkit-scrollbar-thumb {
     align-items: center;
     justify-content: center;
 
-    padding: 2vh 3vw;
+    /* Tiny top/bottom margin so the layout uses nearly the full
+       screen height: church name right at the top, timer (when
+       running) right at the bottom, everything spread evenly. */
+    padding: 0.6vh 3vw;
     box-sizing: border-box;
 
     text-align: center;
@@ -191,7 +194,7 @@ body.preview-mode #scriptureContainer::-webkit-scrollbar-thumb {
 #welcomeContent {
     width: 100%;
     max-width: 1720px;
-    height: 94vh;
+    height: 98.8vh;
 
     display: flex;
     flex-direction: column;
@@ -265,7 +268,7 @@ body.preview-mode #scriptureContainer::-webkit-scrollbar-thumb {
     align-items: center;
 
     font-family: "Playfair Display", Georgia, serif;
-    font-size: clamp(64px, 5.4vw, 96px);
+    font-size: clamp(60px, 5vw, 90px);
     line-height: 0.82;
     font-weight: 900;
     letter-spacing: -0.02em;
@@ -292,8 +295,8 @@ body.preview-mode #scriptureContainer::-webkit-scrollbar-thumb {
     line-height: 0.95;
     letter-spacing: 0.01em;
     text-transform: none;
-    margin-top: 0.06em;
-    padding: 0 0.15em 0.3em 0.05em;
+    margin-top: 0.02em;
+    padding: 0 0.15em 0.26em 0.05em;
 
     /* Kaushan only comes in one weight — thicken it a touch so it
        reads as the heavy brush lettering on the program. */
@@ -321,7 +324,7 @@ body.preview-mode #scriptureContainer::-webkit-scrollbar-thumb {
     font-size: clamp(34px, 2.8vw, 48px);
     line-height: 1.1;
     font-weight: bold;
-    margin-top: 0.15em;
+    margin-top: 0.05em;
 
     color: white;
 }
@@ -352,14 +355,15 @@ body.preview-mode #scriptureContainer::-webkit-scrollbar-thumb {
     align-items: center;
     justify-content: center;
 
-    gap: 0.8vh;
+    gap: 0.3vh;
 }
 
-/* While idle (no countdown running), reserve only a small,
-   modest breathing-room gap at the bottom instead of the full
-   size needed once a countdown is actually shown. */
-#countdownArea:has(.countdown-slot-hidden) {
-    min-height: 6vh;
+/* While idle (no countdown running) the whole timer area is removed
+   from the layout, so the other lines spread evenly over the full
+   height with the date at the very bottom. When a countdown starts,
+   the timer appears at the bottom and the lines re-space. */
+#countdownArea:has(#countdown.countdown-slot-hidden) {
+    display: none;
 }
 
 /* Service begins in */
@@ -398,10 +402,7 @@ body.preview-mode #scriptureContainer::-webkit-scrollbar-thumb {
 /* Countdown row keeps its space even when not actively counting down,
    so the rest of the welcome text doesn't spread out to fill the gap. */
 .countdown-slot-hidden {
-    visibility: hidden;
-    height: 0;
-    overflow: hidden;
-    margin: 0;
+    display: none;
 }
 #scriptureScreen {
     display: none;
@@ -484,6 +485,11 @@ body.welcome-light #welcomeContent h2 {
     font-family: "Great Vibes", "Brush Script MT", cursive;
     font-weight: 400;
     line-height: 1;
+
+    /* The script's tall flourishes (the "W") reach above its line
+       box, so it looks crowded against the church name even when the
+       boxes are evenly spaced — add room above to compensate. */
+    padding-top: 0.28em;
 }
 
 /* "Founders' Day · Year 23" — classic serif, gold */
@@ -508,12 +514,49 @@ body.welcome-light #welcomeThemeSub {
     font-weight: 700;
 }
 
+/*
+ * When a countdown is running on a screen that also has a theme
+ * block, there are six lines plus the timer to fit at full size —
+ * too much for even spacing. So, only in that case: the timer's
+ * label and time share one line, and the theme block alone is
+ * scaled down a little. All the original lines keep their size.
+ */
+body.welcome-has-theme.countdown-running #countdownArea {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 0.5em;
+}
+
+body.welcome-has-theme.countdown-running #welcomeThemeMain {
+    font-size: clamp(48px, 4vw, 72px);
+}
+
+body.welcome-has-theme.countdown-running #welcomeThemeSub {
+    font-size: clamp(28px, 2.3vw, 40px);
+}
+
+body.welcome-has-theme.countdown-running #welcomeContent h2 {
+    padding-top: 0.12em;
+}
+
 /* Date — graceful italic serif */
 body.welcome-light #welcomeDate,
 body.welcome-light #countdownLabel {
     font-family: "Cormorant Garamond", Georgia, serif;
     font-style: italic;
     font-weight: 600;
+}
+
+/* Cormorant's numerals "hang" below the line by default (old-style
+   figures). Use full-height lining figures instead — same as the
+   countdown timer — so "Year 23" and the date sit on the baseline. */
+body.welcome-light #welcomeContent h1,
+body.welcome-light #welcomeContent h3,
+body.welcome-light #welcomeDate,
+body.welcome-light #countdownLabel,
+body.welcome-light #welcomeThemeSub {
+    font-variant-numeric: lining-nums;
+    font-feature-settings: "lnum" 1;
 }
 
 /* ---- Founders' Day: letterhead colors (rust / olive / gold) ---- */
