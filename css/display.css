@@ -498,61 +498,16 @@ body.welcome-light #welcomeContent h2 {
 }
 
 /* "Founders' Day · Year 23" — classic serif, gold */
-/* Founders' Day line — as tall as the screen width allows (sized to
-   fit by display.js), with a little extra stroke weight so the thin
-   serif reads bolder from across the room. */
+/* Founders' Day line — Georgia like the church name, but regular
+   weight so it sits a step below it. Fixed size: the largest this
+   43-character line fits at on one line across a 1920px screen. */
 body.welcome-light #welcomeContent h3 {
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-weight: 700;
-    /* Fixed size — the largest this 43-character line can be on one
-       line at 1920px wide in this font (≈ 1700px wide at 88px). */
-    font-size: clamp(60px, 4.6vw, 88px);
-    -webkit-text-stroke: 0.02em currentColor;
-    paint-order: stroke fill;
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: normal;
+    font-size: clamp(50px, 3.9vw, 75px);
+    letter-spacing: 0;
 }
 
-/* Theme — black on the light background, exactly like the program */
-body.welcome-light #welcomeThemeMain,
-body.welcome-light #welcomeThemeMain .theme-flourish,
-body.welcome-light #welcomeThemeSub {
-    color: #1a1a1a;
-}
-
-body.welcome-light #welcomeThemeMain .theme-flourish::after {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 60' preserveAspectRatio='none'><path d='M4 46 C 60 38, 140 26, 250 30 C 320 33, 360 40, 396 20 C 372 44, 330 50, 250 46 C 150 42, 70 46, 4 52 Z' fill='%231a1a1a'/></svg>");
-}
-
-body.welcome-light #welcomeThemeSub {
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-weight: 700;
-}
-
-/*
- * When a countdown is running on a screen that also has a theme
- * block, there are six lines plus the timer to fit at full size —
- * too much for even spacing. So, only in that case: the timer's
- * label and time share one line, and the theme block alone is
- * scaled down a little. All the original lines keep their size.
- */
-body.welcome-has-theme.countdown-running #countdownArea {
-    flex-direction: row;
-    align-items: baseline;
-    gap: 0.5em;
-}
-
-body.welcome-has-theme.countdown-running #welcomeThemeMain {
-    font-size: clamp(44px, 3.5vw, 62px);
-}
-
-body.welcome-has-theme.countdown-running #welcomeThemeSub {
-    font-size: clamp(26px, 2vw, 36px);
-}
-
-body.welcome-has-theme.countdown-running #welcomeContent h2 {
-    padding-top: 0.12em;
-}
-
-/* Date — graceful italic serif */
 body.welcome-light #welcomeDate,
 body.welcome-light #countdownLabel {
     font-family: "Cormorant Garamond", Georgia, serif;
