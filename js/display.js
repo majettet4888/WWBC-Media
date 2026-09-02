@@ -499,9 +499,39 @@ function applyWelcomeSettings() {
     // rather than wrapping. Runs after fonts load too, since web
     // fonts can be wider than the fallback they replace.
     fitWelcomeLines();
-    if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(fitWelcomeLines);
+    refitWhenFontsLoad();
+}
+
+/*
+ * The decorative fonts download in the background. If the lines are
+ * measured before they arrive, the measurement is of the (wider)
+ * fallback font, and the sizes chosen are wrong once the real font
+ * shows up — the church name came out small on the TV for exactly
+ * this reason. So: explicitly load the fonts this screen uses, then
+ * measure again, and re-measure any time a font finishes loading.
+ */
+let fontRefitHooked = false;
+
+function refitWhenFontsLoad() {
+    if (!document.fonts) return;
+
+    if (!fontRefitHooked) {
+        fontRefitHooked = true;
+        document.fonts.addEventListener("loadingdone", fitWelcomeLines);
     }
+
+    const wanted = [
+        '700 100px "Cormorant Garamond"',
+        'italic 600 100px "Cormorant Garamond"',
+        '400 100px "Great Vibes"',
+        '900 100px "Playfair Display"',
+        '400 100px "Kaushan Script"',
+        '700 100px "Cinzel"'
+    ];
+
+    Promise.all(wanted.map((f) => document.fonts.load(f).catch(() => null)))
+        .then(() => document.fonts.ready)
+        .then(fitWelcomeLines);
 }
 
 let welcomeBackgroundRequest = 0;
@@ -541,7 +571,7 @@ function fitWelcomeLines() {
     const h1 = document.querySelector("#welcomeContent h1");
     if (h1 && h1.offsetParent) {
         h1.style.fontSize = "";
-        if (document.body.classList.contains("welcome-light")) {
+        if (false && document.body.classList.contains("welcome-light")) {
             const available = h1.parentElement.clientWidth;
             const base = parseFloat(getComputedStyle(h1).fontSize);
             const width = h1.scrollWidth;
@@ -552,6 +582,9 @@ function fitWelcomeLines() {
         }
     }
 
+    // Second line: as large as its CSS size allows, but never wider
+    // than the screen — a long line like "Celebrating Annual
+    // Founders' Day – Year 23" is scaled to just fit the width.
     const lines = [
         document.querySelector("#welcomeContent h3"),
         document.getElementById("welcomeThemeMain")
@@ -562,13 +595,12 @@ function fitWelcomeLines() {
 
         el.style.fontSize = "";
         const maxWidth = el.parentElement.clientWidth;
-        let size = parseFloat(getComputedStyle(el).fontSize);
+        const base = parseFloat(getComputedStyle(el).fontSize);
+        const width = el.scrollWidth;
 
-        // Shrink in small steps until it fits (floor at 60% size).
-        const minSize = size * 0.6;
-        while (el.scrollWidth > maxWidth && size > minSize) {
-            size -= 2;
-            el.style.fontSize = `${size}px`;
+        if (width > maxWidth && width > 0) {
+            const fitted = Math.floor(base * (maxWidth / width) * 0.995);
+            el.style.fontSize = `${Math.max(fitted, base * 0.6)}px`;
         }
     }
 }
