@@ -504,7 +504,7 @@ body.welcome-light #welcomeContent h2 {
 body.welcome-light #welcomeContent h3 {
     font-family: Georgia, "Times New Roman", serif;
     font-weight: normal;
-    font-size: clamp(58px, 4.6vw, 88px);
+    font-size: clamp(54px, 4.2vw, 80px);
     letter-spacing: 0;
 }
 
