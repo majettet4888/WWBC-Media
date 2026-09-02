@@ -534,6 +534,24 @@ function setWelcomeBackground(url) {
 }
 
 function fitWelcomeLines() {
+    // Church name: in the light (decorative-font) style, size it to
+    // span the screen edge to edge — the same width the original
+    // Georgia name fills — since the decorative font draws narrower
+    // at the same pixel size. The normal screen is left untouched.
+    const h1 = document.querySelector("#welcomeContent h1");
+    if (h1 && h1.offsetParent) {
+        h1.style.fontSize = "";
+        if (document.body.classList.contains("welcome-light")) {
+            const available = h1.parentElement.clientWidth;
+            const base = parseFloat(getComputedStyle(h1).fontSize);
+            const width = h1.scrollWidth;
+            if (width > 0) {
+                const ratio = Math.min(available / width, 1.6);
+                h1.style.fontSize = `${Math.floor(base * ratio * 0.995)}px`;
+            }
+        }
+    }
+
     const lines = [
         document.querySelector("#welcomeContent h3"),
         document.getElementById("welcomeThemeMain")
@@ -689,7 +707,10 @@ function updateCountdown() {
 
     countdownLabel.classList.remove("countdown-slot-hidden");
     countdown.classList.remove("countdown-slot-hidden");
-    document.body.classList.add("countdown-running");
+    if (!document.body.classList.contains("countdown-running")) {
+        document.body.classList.add("countdown-running");
+        fitWelcomeLines();
+    }
 
     countdown.textContent = formatDuration(remainingMs);
 }
