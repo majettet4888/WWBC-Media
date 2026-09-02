@@ -183,7 +183,8 @@ body.preview-mode #scriptureContainer::-webkit-scrollbar-thumb {
     /* Tiny top/bottom margin so the layout uses nearly the full
        screen height: church name right at the top, timer (when
        running) right at the bottom, everything spread evenly. */
-    padding: 2.2vh 3vw;
+    padding: 2vh 3vw 3.4vh; /* a touch more at the bottom so the
+                               date sits clear of the TV's edge */
     box-sizing: border-box;
 
     text-align: center;
@@ -194,7 +195,7 @@ body.preview-mode #scriptureContainer::-webkit-scrollbar-thumb {
 #welcomeContent {
     width: 100%;
     max-width: 1720px;
-    height: 95.6vh;
+    height: 94.6vh;
 
     display: flex;
     flex-direction: column;
@@ -474,10 +475,11 @@ body.welcome-light #countdown {
     color: #111;
 }
 
-/* Church name — classic serif */
+/* Church name — EXACTLY as the normal welcome screen (Georgia Bold,
+   same size), just recolored. The anchor line for every occasion. */
 body.welcome-light #welcomeContent h1 {
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-weight: 700;
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: bold;
 }
 
 /* "Welcome" — flowing script, like "Whosoever" on the letterhead */
@@ -496,10 +498,15 @@ body.welcome-light #welcomeContent h2 {
 }
 
 /* "Founders' Day · Year 23" — classic serif, gold */
+/* Founders' Day line — as tall as the screen width allows (sized to
+   fit by display.js), with a little extra stroke weight so the thin
+   serif reads bolder from across the room. */
 body.welcome-light #welcomeContent h3 {
     font-family: "Cormorant Garamond", Georgia, serif;
     font-weight: 700;
-    font-size: clamp(82px, 7.1vw, 117px); /* ≈ original's visual size */
+    font-size: clamp(90px, 8vw, 150px);
+    -webkit-text-stroke: 0.018em currentColor;
+    paint-order: stroke fill;
 }
 
 /* Theme — black on the light background, exactly like the program */
@@ -551,8 +558,10 @@ body.welcome-light #countdownLabel {
     font-weight: 600;
 }
 
+/* Date — deliberately the quietest line: a bit under the original's
+   84px so it never competes with the church name or theme. */
 body.welcome-light #welcomeDate {
-    font-size: clamp(64px, 5.9vw, 97px); /* ≈ original's visual size */
+    font-size: clamp(52px, 4.6vw, 76px);
 }
 
 /* Cormorant's numerals "hang" below the line by default (old-style
