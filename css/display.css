@@ -508,6 +508,23 @@ body.welcome-light #welcomeContent h3 {
     letter-spacing: 0;
 }
 
+/* Theme — black on the light background, exactly like the program */
+body.welcome-light #welcomeThemeMain,
+body.welcome-light #welcomeThemeMain .theme-flourish,
+body.welcome-light #welcomeThemeSub {
+    color: #1a1a1a;
+}
+
+body.welcome-light #welcomeThemeMain .theme-flourish::after {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 60' preserveAspectRatio='none'><path d='M4 46 C 60 38, 140 26, 250 30 C 320 33, 360 40, 396 20 C 372 44, 330 50, 250 46 C 150 42, 70 46, 4 52 Z' fill='%231a1a1a'/></svg>");
+}
+
+body.welcome-light #welcomeThemeSub {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-weight: 700;
+}
+
+/* Date — graceful italic serif */
 body.welcome-light #welcomeDate,
 body.welcome-light #countdownLabel {
     font-family: "Cormorant Garamond", Georgia, serif;
