@@ -608,6 +608,10 @@ function fitWelcomeLines() {
         el.style.fontSize = "";
         if (!fontsConfirmed) continue;
 
+        // The second line has a fixed size in the light style and is
+        // allowed to use the side margins — never shrink it there.
+        if (light && el.tagName === "H3") continue;
+
         const maxWidth = el.parentElement.clientWidth;
         const base = parseFloat(getComputedStyle(el).fontSize);
         const width = el.scrollWidth;
