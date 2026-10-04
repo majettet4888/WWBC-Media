@@ -493,6 +493,7 @@ function applyWelcomeSettings() {
     if (occasionKey) {
         document.body.classList.add(`welcome-occasion-${occasionKey}`);
     }
+    if (typeof welcomeDate !== "undefined" && welcomeDate) updateWelcomeDate();
 
     // Long lines (e.g. "Celebrating Annual Founders' Day – Year 23")
     // are kept on ONE line by shrinking just that line to fit,
@@ -624,6 +625,12 @@ function fitWelcomeLines() {
 }
 
 function updateWelcomeDate() {
+    // Founders' Day shows the guest speaker in place of the date.
+    if (document.body.classList.contains("welcome-occasion-foundersDay")) {
+        welcomeDate.textContent = "Speaker: Pastor Howard Woods Jr.";
+        return;
+    }
+
     const today = new Date();
 
     welcomeDate.textContent = today.toLocaleDateString(
