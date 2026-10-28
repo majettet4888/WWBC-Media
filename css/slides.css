@@ -1,0 +1,134 @@
+/*
+ * Announcement slides — shared by the Announcements editor and the
+ * TV display, so a slide looks exactly the same in both places.
+ *
+ * Every slide is laid out on a fixed 1920x1080 canvas (the TV's real
+ * resolution) and then scaled to whatever box it's shown in. Font
+ * sizes in the editor are therefore true TV pixels.
+ */
+
+.slide-canvas {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    background: #000;
+    transform-origin: top left;
+}
+
+.slide-bg {
+    position: absolute;
+    inset: 0;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.slide-dim {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+/* Centers the text block vertically (top / middle / bottom). */
+.slide-frame {
+    position: absolute;
+    inset: 0;
+    padding: 70px 90px;
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.slide-frame.valign-top    { justify-content: flex-start; }
+.slide-frame.valign-bottom { justify-content: flex-end; }
+
+.slide-content {
+    width: 100%;
+    max-height: 100%;
+    overflow: hidden;
+
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 90px;
+    line-height: 1.2;
+    color: #ffffff;
+    text-align: center;
+
+    overflow-wrap: break-word;
+    outline: none;
+}
+
+.slide-content.with-shadow {
+    text-shadow:
+        3px 3px 10px rgba(0, 0, 0, 0.9),
+        0 0 24px rgba(0, 0, 0, 0.6);
+}
+
+.slide-content div,
+.slide-content p {
+    margin: 0;
+}
+
+/* "Spread lines evenly": the lines share the whole screen height with
+   equal space between them (like the original Welcome Screen). */
+.slide-content.spread {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+}
+
+/* The "today's date" piece — keeps itself up to date. */
+.slide-field {
+    white-space: nowrap;
+}
+
+.ann-stage-wrap .slide-field {
+    outline: 3px dashed rgba(212, 175, 55, 0.8);
+    outline-offset: 6px;
+    border-radius: 4px;
+}
+
+/* While a countdown runs on a Welcome Screen design, leave room for it
+   at the bottom of the screen. */
+.slide-canvas.has-countdown .slide-frame {
+    padding-bottom: 200px;
+}
+
+.slide-countdown.welcome-countdown {
+    left: 50%;
+    right: auto;
+    bottom: 40px;
+    transform: translateX(-50%);
+    font-size: 64px;
+    padding: 16px 44px;
+}
+
+.slide-content img {
+    max-width: 100%;
+    vertical-align: middle;
+    border-radius: 12px;
+}
+
+/* Small "Service begins in 4:32" pill shown over slides on the TV
+   while a countdown is running. */
+.slide-countdown {
+    position: absolute;
+    right: 40px;
+    bottom: 36px;
+    z-index: 5;
+
+    padding: 14px 30px;
+    border-radius: 999px;
+
+    background: rgba(0, 0, 0, 0.72);
+    color: #fff;
+
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 44px;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+    text-shadow: none;
+}

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>WWBC Announcements &amp; Welcome Screens</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Cormorant+Garamond:ital,wght@0,700;1,600&family=Dancing+Script:wght@700&family=Great+Vibes&family=Kaushan+Script&family=Lobster&family=Montserrat:wght@400;700;900&family=Oswald:wght@500;700&family=Playfair+Display:wght@700;900&display=swap">
+
+    <link rel="stylesheet" href="css/style.css?v=20261026a">
+    <link rel="stylesheet" href="css/slides.css?v=20261026a">
+    <link rel="stylesheet" href="css/announcements.css?v=20261026a">
+</head>
+
+<body class="announcements-page">
+
+<!-- ============ Top bar: where am I / how do I get back ============ -->
+<header class="ann-topbar">
+    <div class="ann-title" id="pageTitle">📢 Announcements</div>
+
+    <div class="ann-nav">
+        <button type="button" class="ann-nav-home" onclick="location.href='index.html'">⬅ Home</button>
+        <button type="button" class="ann-nav-scripture" onclick="location.href='scripture.html'">📖 Go to Scripture Console</button>
+    </div>
+</header>
+
+<div class="ann-layout">
+
+    <!-- ============ Left: the list of slides ============ -->
+    <aside class="ann-sidebar">
+
+        <div class="ann-tabs" id="tabs">
+            <button type="button" data-tab="announcement">📢 Announcements</button>
+            <button type="button" data-tab="welcome">🏠 Welcome Screens</button>
+        </div>
+
+        <div class="ann-new" id="newSlideBox">
+            <div class="ann-label">New slide</div>
+            <div class="ann-new-buttons">
+                <button type="button" data-template="birthday">🎂 Birthday</button>
+                <button type="button" data-template="event">📅 Event</button>
+                <button type="button" data-template="flyer">🖼 Flyer / Picture</button>
+                <button type="button" data-template="blank">➕ Blank</button>
+            </div>
+        </div>
+
+        <div class="ann-label" id="listLabel">Your slides</div>
+        <ul id="slideList" class="ann-slide-list"></ul>
+
+        <div class="ann-backup">
+            <button type="button" id="backupButton">💾 Save Backup File</button>
+            <label class="ann-file-button">
+                📂 Load Backup File
+                <input type="file" id="restoreInput" accept=".json,application/json" hidden>
+            </label>
+        </div>
+
+    </aside>
+
+    <!-- ============ Middle: the editor ============ -->
+    <main class="ann-main">
+
+        <div class="ann-slide-name-row">
+            <label for="slideName">Slide name</label>
+            <input type="text" id="slideName" maxlength="60" placeholder="e.g. Birthday – Sis. Jones">
+            <span id="onTvBadge" class="ann-on-tv-badge" hidden>● ON TV NOW</span>
+            <span id="saveStatus" class="ann-save-status"></span>
+        </div>
+
+        <!-- Word-style toolbar -->
+        <div class="ann-toolbar" id="toolbar">
+
+            <select id="fontSelect" title="Font"></select>
+
+            <select id="sizeSelect" title="Text size (on the TV)"></select>
+            <button type="button" data-cmd="smaller" title="Smaller">A−</button>
+            <button type="button" data-cmd="bigger" title="Bigger">A+</button>
+
+            <span class="ann-sep"></span>
+
+            <button type="button" data-cmd="bold" title="Bold"><b>B</b></button>
+            <button type="button" data-cmd="italic" title="Italic"><i>I</i></button>
+            <button type="button" data-cmd="underline" title="Underline"><u>U</u></button>
+
+            <span class="ann-sep"></span>
+
+            <label class="ann-color" title="Text color">
+                <span>A</span>
+                <input type="color" id="colorInput" value="#ffffff">
+            </label>
+            <span id="swatches" class="ann-swatches"></span>
+
+            <span class="ann-sep"></span>
+
+            <button type="button" data-cmd="justifyLeft" title="Align left">⯇</button>
+            <button type="button" data-cmd="justifyCenter" title="Center">≡</button>
+            <button type="button" data-cmd="justifyRight" title="Align right">⯈</button>
+
+            <span class="ann-sep"></span>
+
+            <label class="ann-tool-button" title="Put a photo in the text">
+                📷 Photo
+                <input type="file" id="inlinePhotoInput" accept="image/*" hidden>
+            </label>
+            <button type="button" data-cmd="insertDate" title="Today's date — updates itself every week">📅 Today's Date</button>
+
+            <span class="ann-sep"></span>
+
+            <button type="button" data-cmd="undo" title="Undo">↶</button>
+            <button type="button" data-cmd="redo" title="Redo">↷</button>
+            <button type="button" data-cmd="removeFormat" title="Clear formatting">⌫ Clear</button>
+        </div>
+
+        <!-- Shown when a photo inside the text is clicked -->
+        <div class="ann-photo-bar" id="photoBar" hidden>
+            Photo:
+            <button type="button" id="photoSmaller">Smaller</button>
+            <button type="button" id="photoBigger">Bigger</button>
+            <button type="button" id="photoDelete">Remove photo</button>
+        </div>
+
+        <!-- The slide itself, exactly as the TV will show it -->
+        <div class="ann-stage-wrap" id="stageWrap">
+            <div id="stage"></div>
+        </div>
+        <div id="overflowWarning" class="ann-warning" hidden>
+            ⚠ The text doesn't all fit on the screen — make it smaller or shorter.
+        </div>
+        <div class="ann-hint">Click on the slide and type, just like a document. Select words, then use the toolbar to change them.
+            To add a picture from the internet: right-click it → <b>Copy image</b>, then click in the slide and press <b>Ctrl + V</b>.</div>
+
+        <!-- Slide layout + background -->
+        <div class="ann-panels">
+
+            <section class="ann-panel">
+                <div class="ann-label">Layout</div>
+
+                <div class="ann-row">
+                    <span>Text position</span>
+                    <div class="ann-segmented" id="valignButtons">
+                        <button type="button" data-valign="top">Top</button>
+                        <button type="button" data-valign="middle">Middle</button>
+                        <button type="button" data-valign="bottom">Bottom</button>
+                    </div>
+                </div>
+
+                <div class="ann-row">
+                    <span>Line spacing</span>
+                    <select id="lineHeightSelect">
+                        <option value="1">Tight</option>
+                        <option value="1.2">Normal</option>
+                        <option value="1.5">Roomy</option>
+                    </select>
+                </div>
+
+                <label class="ann-check">
+                    <input type="checkbox" id="spreadCheck">
+                    Spread lines evenly top to bottom
+                </label>
+
+                <label class="ann-check">
+                    <input type="checkbox" id="shadowCheck">
+                    Shadow behind text (helps on photos)
+                </label>
+            </section>
+
+            <section class="ann-panel ann-panel-wide">
+                <div class="ann-label">Background</div>
+
+                <div class="ann-bg-grid" id="bgFills"></div>
+                <div class="ann-bg-grid" id="bgPresets"></div>
+
+                <div class="ann-row">
+                    <label class="ann-color ann-color-wide" title="Any solid color">
+                        🎨 Pick a color
+                        <input type="color" id="bgColorInput" value="#1d3557">
+                    </label>
+                    <label class="ann-file-button">
+                        🖼 Picture from this computer
+                        <input type="file" id="bgPhotoInput" accept="image/*" hidden>
+                    </label>
+                    <button type="button" id="bgPasteButton" class="ann-file-button">📋 Paste copied picture</button>
+                </div>
+
+                <div class="ann-row ann-link-row">
+                    <input type="url" id="bgLinkInput" placeholder="…or paste a picture's web link (https://…)">
+                    <button type="button" id="bgLinkButton" class="ann-file-button">Use link</button>
+                </div>
+
+                <div class="ann-row" id="bgPictureOptions">
+                    <span>Picture</span>
+                    <div class="ann-segmented" id="fitButtons">
+                        <button type="button" data-fit="cover">Fill screen</button>
+                        <button type="button" data-fit="contain">Show whole picture</button>
+                    </div>
+                </div>
+
+                <div class="ann-row">
+                    <span>Darken background</span>
+                    <input type="range" id="dimRange" min="0" max="0.8" step="0.05">
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <!-- ============ Right: what's on the TV ============ -->
+    <aside class="ann-tv">
+
+        <div class="ann-label">On the TV now</div>
+        <div class="ann-tv-preview">
+            <iframe id="tvPreview" src="display.html?v=20261026a" title="What the TV is showing"></iframe>
+        </div>
+        <div id="tvStatus" class="ann-tv-status">Welcome Screen</div>
+
+        <button type="button" id="showSlideButton" class="ann-big ann-big-show">📺 Show This Slide on TV</button>
+
+        <button type="button" id="useWelcomeButton" class="ann-big ann-big-show" hidden>🏠 Use This Welcome Screen on TV</button>
+
+        <button type="button" id="resetWelcomeButton" class="ann-big ann-big-welcome" hidden>↺ Reset to Original Design</button>
+
+        <div class="ann-slideshow" id="slideshowBox">
+            <button type="button" id="playSlideshowButton" class="ann-big ann-big-play">▶ Play Slideshow</button>
+            <label>
+                Each slide shows for
+                <select id="intervalSelect">
+                    <option value="5">5 seconds</option>
+                    <option value="8" selected>8 seconds</option>
+                    <option value="10">10 seconds</option>
+                    <option value="15">15 seconds</option>
+                    <option value="20">20 seconds</option>
+                    <option value="30">30 seconds</option>
+                </select>
+            </label>
+            <div class="ann-small">Plays every slide that has “In slideshow” checked, in list order.</div>
+        </div>
+
+        <button type="button" id="welcomeButton" class="ann-big ann-big-welcome">🏠 Back to Welcome Screen</button>
+
+        <button type="button" class="ann-big ann-big-scripture" onclick="location.href='scripture.html'">📖 Go to Scripture Console</button>
+
+    </aside>
+
+</div>
+
+<!-- Confirm delete (in-page, never a browser popup — see style.css) -->
+<div id="deleteOverlay" class="confirm-overlay" style="display:none;">
+    <div class="confirm-box">
+        <div class="confirm-message" id="deleteMessage">Delete this slide?</div>
+        <div class="confirm-buttons">
+            <button type="button" id="deleteYes" class="ann-danger">Yes, delete it</button>
+            <button type="button" id="deleteNo">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/slides.js?v=20261026a"></script>
+<script src="js/announcements.js?v=20261026a"></script>
+
+</body>
+</html>

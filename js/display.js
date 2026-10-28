@@ -96,6 +96,12 @@ const scriptureScreen = document.getElementById("scriptureScreen");
 const hymnalScreen = document.getElementById("hymnalScreen");
 const welcomeDate = document.getElementById("welcomeDate");
 const countdown = document.getElementById("countdown");
+const announcementScreen = document.getElementById("announcementScreen");
+const announcementStage = document.getElementById("announcementStage");
+const announcementCountdown = document.getElementById("announcementCountdown");
+const welcomeDesign = document.getElementById("welcomeDesign");
+const welcomeDesignStage = document.getElementById("welcomeDesignStage");
+const welcomeDesignCountdown = document.getElementById("welcomeDesignCountdown");
 
 async function loadRedLetterData() {
     try {
@@ -114,6 +120,7 @@ async function loadRedLetterData() {
 }
 
 function showWelcomeScreen() {
+    hideAnnouncementScreen();
     document.body.classList.remove("scripture-mode");
     document.body.classList.remove("hymnal-mode");
     document.body.classList.add("welcome-mode");
@@ -121,9 +128,83 @@ function showWelcomeScreen() {
     welcomeScreen.style.display = "flex";
     scriptureScreen.style.display = "none";
     hymnalScreen.style.display = "none";
+
+    refreshWelcomeDesign();
 }
 
+/* ------------------------------------------------------------------
+ * Editable Welcome Screen designs
+ * ------------------------------------------------------------------ */
+
+let previewOccasionOverride = null;
+let welcomeDesignCanvas = null;
+
+async function refreshWelcomeDesign() {
+    if (!window.WWBCSlides || !welcomeDesign) return;
+
+    const S = window.WWBCSlides;
+    const key = previewOccasionOverride || S.getActiveWelcome();
+
+    let design = null;
+    try {
+        await S.ensureWelcomeDesigns();
+        design = await S.getWelcomeDesign(key);
+    } catch (error) {
+        console.error("Unable to read the Welcome Screen design.", error);
+    }
+
+    if (!design) {
+        // Fall back to the original built-in Welcome Screen.
+        document.body.classList.remove("welcome-designed");
+        welcomeDesign.hidden = true;
+        welcomeDesignCanvas = null;
+        return;
+    }
+
+    welcomeDesignStage.innerHTML = "";
+    const canvas = document.createElement("div");
+    welcomeDesignStage.appendChild(canvas);
+    S.renderSlide(canvas, design);
+    welcomeDesignCanvas = canvas;
+
+    document.body.classList.add("welcome-designed");
+    welcomeDesign.hidden = false;
+    S.fitCanvas(canvas, welcomeDesign);
+
+    updateCountdown();
+    fitWelcomeDesignText();
+}
+
+function fitWelcomeDesignText() {
+    if (!welcomeDesignCanvas || !window.WWBCSlides) return;
+    window.WWBCSlides.shrinkToFit(welcomeDesignCanvas.querySelector(".slide-content"));
+}
+
+// Fancy fonts arrive a moment after the page; re-check the fit then.
+if (document.fonts) {
+    document.fonts.addEventListener("loadingdone", () => {
+        fitWelcomeDesignText();
+        if (window.WWBCSlides) {
+            window.WWBCSlides.shrinkToFit(announcementStage.querySelector(".slide-content"));
+        }
+    });
+}
+
+window.addEventListener("resize", () => {
+    if (welcomeDesignCanvas && !welcomeDesign.hidden) {
+        window.WWBCSlides.fitCanvas(welcomeDesignCanvas, welcomeDesign);
+    }
+});
+
+// Keep "today's date" pieces correct if the TV stays on overnight.
+setInterval(() => {
+    if (!window.WWBCSlides) return;
+    window.WWBCSlides.fillFields(welcomeDesignStage);
+    window.WWBCSlides.fillFields(announcementStage);
+}, 10 * 60 * 1000);
+
 function showScriptureScreen() {
+    hideAnnouncementScreen();
     document.body.classList.remove("welcome-mode");
     document.body.classList.remove("hymnal-mode");
     document.body.classList.add("scripture-mode");
@@ -136,6 +217,7 @@ function showScriptureScreen() {
 }
 
 function showHymnalScreen() {
+    hideAnnouncementScreen();
     document.body.classList.remove("welcome-mode");
     document.body.classList.remove("scripture-mode");
     document.body.classList.add("hymnal-mode");
@@ -146,6 +228,110 @@ function showHymnalScreen() {
 
     loadHymn();
 }
+
+/* ------------------------------------------------------------------
+ * Announcement slides
+ * ------------------------------------------------------------------ */
+
+let announcementTimer = null;
+let announcementShowingId = null;
+
+function hideAnnouncementScreen() {
+    clearTimeout(announcementTimer);
+    announcementTimer = null;
+    announcementShowingId = null;
+    document.body.classList.remove("announcement-mode");
+    if (announcementScreen) announcementScreen.style.display = "none";
+}
+
+function showAnnouncementScreen() {
+    document.body.classList.remove("welcome-mode", "scripture-mode", "hymnal-mode");
+    document.body.classList.add("announcement-mode");
+
+    welcomeScreen.style.display = "none";
+    scriptureScreen.style.display = "none";
+    hymnalScreen.style.display = "none";
+    announcementScreen.style.display = "block";
+
+    updateCountdown();
+    refreshAnnouncement(true);
+}
+
+function fitAnnouncementStage() {
+    const canvas = announcementStage.firstElementChild;
+    if (canvas) window.WWBCSlides.fitCanvas(canvas, announcementScreen);
+}
+
+function drawAnnouncement(slide, fade) {
+    const draw = () => {
+        announcementStage.innerHTML = "";
+        const canvas = document.createElement("div");
+        announcementStage.appendChild(canvas);
+        if (slide) window.WWBCSlides.renderSlide(canvas, slide);
+        else window.WWBCSlides.renderSlide(canvas, { html: "", bg: { kind: "fill", value: "#000" } });
+        fitAnnouncementStage();
+        window.WWBCSlides.shrinkToFit(announcementStage.querySelector(".slide-content"));
+        announcementStage.classList.remove("fading");
+    };
+
+    announcementShowingId = slide ? slide.id : null;
+
+    if (fade && announcementStage.firstElementChild) {
+        announcementStage.classList.add("fading");
+        setTimeout(draw, 450);
+    } else {
+        draw();
+    }
+}
+
+/*
+ * Works out which slide should be on screen right now and draws it.
+ * Slideshows are timed from the clock, so the TV and the small
+ * previews on the control pages always land on the same slide.
+ */
+async function refreshAnnouncement(forceRedraw) {
+    if (!document.body.classList.contains("announcement-mode")) return;
+    if (!window.WWBCSlides) return;
+
+    clearTimeout(announcementTimer);
+    announcementTimer = null;
+
+    const show = window.WWBCSlides.readShow();
+    let slides = [];
+    try {
+        slides = await window.WWBCSlides.getAllSlides();
+    } catch (error) {
+        console.error("Unable to read announcement slides.", error);
+    }
+
+    if (!show) {
+        drawAnnouncement(null, false);
+        return;
+    }
+
+    if (show.mode === "slideshow") {
+        const playlist = slides.filter((s) => s.inShow !== false);
+        if (!playlist.length) {
+            drawAnnouncement(null, false);
+            return;
+        }
+        const pos = window.WWBCSlides.slideshowPosition(show, playlist.length);
+        const slide = playlist[pos.index];
+        const changed = slide.id !== announcementShowingId;
+        if (changed || forceRedraw) drawAnnouncement(slide, changed && !forceRedraw);
+
+        announcementTimer = setTimeout(() => refreshAnnouncement(false), pos.msUntilNext + 30);
+        return;
+    }
+
+    const slide = slides.find((s) => s.id === show.slideId) || null;
+    const changed = (slide ? slide.id : null) !== announcementShowingId;
+    drawAnnouncement(slide, changed && !forceRedraw);
+}
+
+window.addEventListener("resize", () => {
+    if (document.body.classList.contains("announcement-mode")) fitAnnouncementStage();
+});
 
 function loadHymn() {
     const storedHymn = localStorage.getItem("displayedHymnData");
@@ -186,6 +372,8 @@ function loadCurrentDisplayMode() {
         showScriptureScreen();
     } else if (savedMode === "hymnal") {
         showHymnalScreen();
+    } else if (savedMode === "announcement") {
+        showAnnouncementScreen();
     } else {
         showWelcomeScreen();
     }
@@ -746,6 +934,12 @@ function updateCountdown() {
         countdownLabel.classList.add("countdown-slot-hidden");
         countdown.classList.add("countdown-slot-hidden");
         document.body.classList.remove("countdown-running");
+        if (announcementCountdown) announcementCountdown.hidden = true;
+        if (welcomeDesignCountdown) welcomeDesignCountdown.hidden = true;
+        if (welcomeDesignCanvas && welcomeDesignCanvas.classList.contains("has-countdown")) {
+            welcomeDesignCanvas.classList.remove("has-countdown");
+            fitWelcomeDesignText();
+        }
         return;
     }
 
@@ -753,6 +947,9 @@ function updateCountdown() {
 
     if (remainingMs <= 0) {
         countdown.textContent = "00:00";
+        if (announcementCountdown) announcementCountdown.hidden = true;
+        if (welcomeDesignCountdown) welcomeDesignCountdown.hidden = true;
+        if (welcomeDesignCanvas) welcomeDesignCanvas.classList.remove("has-countdown");
         document.body.classList.remove("countdown-running");
 
         localStorage.setItem("countdownActive", "false");
@@ -770,6 +967,24 @@ function updateCountdown() {
     }
 
     countdown.textContent = formatDuration(remainingMs);
+
+    // Also show the countdown as a small pill over announcement slides.
+    if (announcementCountdown) {
+        announcementCountdown.hidden = false;
+        announcementCountdown.textContent =
+            `Service begins in ${formatDuration(remainingMs)}`;
+    }
+
+    // ...and at the bottom of an editable Welcome Screen design.
+    if (welcomeDesignCountdown) {
+        welcomeDesignCountdown.hidden = false;
+        welcomeDesignCountdown.textContent =
+            `Service begins in ${formatDuration(remainingMs)}`;
+    }
+    if (welcomeDesignCanvas && !welcomeDesignCanvas.classList.contains("has-countdown")) {
+        welcomeDesignCanvas.classList.add("has-countdown");
+        fitWelcomeDesignText();
+    }
 }
 
     
@@ -991,7 +1206,26 @@ window.addEventListener("storage", async (event) => {
             showHymnalScreen();
         } else if (event.newValue === "welcome") {
             showWelcomeScreen();
+        } else if (event.newValue === "announcement") {
+            showAnnouncementScreen();
         }
+    }
+
+    // A different slide / slideshow was sent, or a slide was edited.
+    if (
+        (event.key === "announcementShow" ||
+            event.key === "announcementsUpdated") &&
+        !isSettingsPreview
+    ) {
+        refreshAnnouncement(true);
+    }
+
+    // A Welcome Screen design was edited, or a different occasion chosen.
+    if (
+        event.key === "welcomeDesignUpdated" ||
+        event.key === "activeWelcome"
+    ) {
+        if (welcomeScreen.style.display !== "none") refreshWelcomeDesign();
     }
 });
 
@@ -1001,6 +1235,12 @@ window.addEventListener("message", (event) => {
     if (event.origin !== window.location.origin) return;
 
     const data = event.data || {};
+    if (data.type === "previewWelcomeOccasion") {
+        previewOccasionOverride = data.occasion || null;
+        refreshWelcomeDesign();
+        return;
+    }
+
     if (data.type === "previewWelcomeSettings") {
         previewSettingsOverride = data.settings || null;
         applyWelcomeSettings();

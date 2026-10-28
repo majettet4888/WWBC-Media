@@ -658,3 +658,53 @@ body.scripture-mode {
 
     white-space: pre-wrap;
 }
+
+/*
+ * Announcement slides. The slide is drawn on a 1920x1080 canvas
+ * (see slides.css) and scaled to fill the screen, centered, on a
+ * black background — so it fits any TV resolution.
+ */
+#announcementScreen {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000;
+    overflow: hidden;
+}
+
+#announcementStage {
+    position: absolute;
+    inset: 0;
+    transition: opacity 0.45s ease;
+}
+
+#announcementStage.fading {
+    opacity: 0;
+}
+
+body.announcement-mode {
+    background: #000;
+}
+
+/* Editable Welcome Screen designs cover the whole screen. When one
+   is showing, the original built-in welcome text is hidden. */
+#welcomeDesign {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    background: #000;
+    overflow: hidden;
+}
+
+#welcomeDesign[hidden] {
+    display: none;
+}
+
+#welcomeDesignStage {
+    position: absolute;
+    inset: 0;
+}
+
+body.welcome-designed #welcomeContent {
+    visibility: hidden;
+}

@@ -6,8 +6,8 @@
 
     <title>WWBC Settings</title>
 
-    <link rel="stylesheet" href="css/style.css?v=20260901s">
-    <link rel="stylesheet" href="css/settings.css?v=20260901s">
+    <link rel="stylesheet" href="css/style.css?v=20261026a">
+    <link rel="stylesheet" href="css/settings.css?v=20261026a">
 </head>
 
 <body>
@@ -23,81 +23,38 @@
 
             <div class="settings-section-title">Welcome Screen</div>
             <div class="settings-section-help">
-                Pick the occasion, adjust the wording if you like, then
-                <strong>Save &amp; Apply to TV</strong>. The preview below
-                updates as you type.
+                Pick an occasion to see its Welcome Screen. <strong>Use This on TV</strong>
+                makes it the one the TV shows. <strong>Edit</strong> opens it in the
+                editor, where you can change any words, fonts, sizes, colors and the background,
+                just like a document.
             </div>
 
-            <div class="occasion-row" id="occasionRow">
-                <button type="button" class="occasion-chip" data-occasion="normal">Normal Sunday</button>
-                <button type="button" class="occasion-chip" data-occasion="foundersDay">Founders' Day</button>
-                <button type="button" class="occasion-chip" data-occasion="pastorAppreciation">Pastor Appreciation</button>
-                <button type="button" class="occasion-chip" data-occasion="thanksgiving">Thanksgiving</button>
-                <button type="button" class="occasion-chip" data-occasion="christmas">Christmas</button>
-                <button type="button" class="occasion-chip" data-occasion="newYearsEve">New Year's Eve</button>
-                <button type="button" class="occasion-chip" data-occasion="newYearsDay">New Year's Day</button>
-            </div>
+            <div class="occasion-row" id="occasionRow"></div>
 
             <div class="welcome-preview-wrap">
                 <iframe id="welcomePreviewFrame" class="welcome-preview-frame"
-                        src="display.html?welcome=1&v=20260901s"
+                        src="display.html?welcome=1&v=20261026a"
                         title="Welcome screen preview"></iframe>
             </div>
 
-            <div class="settings-grid">
-
-                <label class="settings-field">
-                    <span>Main line</span>
-                    <input type="text" id="welcomeHeadingInput" maxlength="40" placeholder="Welcome">
-                </label>
-
-                <label class="settings-field">
-                    <span>Second line</span>
-                    <input type="text" id="welcomeSubheadingInput" maxlength="60" placeholder="Sunday Worship Service">
-                </label>
-
-                <label class="settings-field">
-                    <span>Theme (optional)</span>
-                    <input type="text" id="welcomeThemeMainInput" maxlength="40" placeholder="e.g. Praise Him Anyhow">
-                </label>
-
-                <label class="settings-field">
-                    <span>Theme tagline (optional)</span>
-                    <input type="text" id="welcomeThemeSubInput" maxlength="60" placeholder="e.g. (Ain't Nobody God but God!)">
-                </label>
-
-                <div class="settings-field settings-field-wide">
-                    <span>Background</span>
-
-                    <div class="settings-bg-buttons">
-                        <button id="welcomeBgArtworkButton" type="button">Occasion Artwork</button>
-                        <button id="welcomeBgUseDefaultButton" type="button">Church Photo</button>
-                        <label class="settings-file-button">
-                            Choose Photo…
-                            <input type="file" id="welcomeBgFileInput" accept="image/*" style="display:none;">
-                        </label>
-                    </div>
-
-                    <div id="welcomeBgStatus" class="settings-bg-status"></div>
-                </div>
-
-                <label class="settings-field">
-                    <span>Text color</span>
-                    <select id="welcomeTextStyleSelect">
-                        <option value="light">White text (for dark photos)</option>
-                        <option value="dark">Dark text (for light backgrounds)</option>
-                    </select>
-                </label>
-
-            </div>
-
             <div class="settings-actions">
-                <button id="welcomeSettingsSaveButton" type="button">Save &amp; Apply to TV</button>
-                <button id="welcomeSettingsResetButton" type="button">Reset to Normal Sunday</button>
+                <button id="useOnTvButton" type="button">🏠 Use This on TV</button>
+                <button id="editButton" type="button">✏ Edit This Welcome Screen</button>
             </div>
 
             <div id="settingsStatus" class="settings-status"></div>
 
+        </section>
+
+        <!-- ================= Announcements ================= -->
+        <section class="settings-section">
+            <div class="settings-section-title">Announcements</div>
+            <div class="settings-section-help">
+                Birthday, event and flyer slides for the TV, with a slideshow.
+            </div>
+            <div class="settings-actions">
+                <button type="button" onclick="location.href='announcements.html'">📢 Open Announcements</button>
+            </div>
         </section>
 
     </div>
@@ -113,7 +70,8 @@
 
 </div>
 
-<script src="js/settings.js?v=20260901s"></script>
+<script src="js/slides.js?v=20261026a"></script>
+<script src="js/settings.js?v=20261026a"></script>
 
 </body>
 </html>

@@ -9,15 +9,23 @@
     <!-- Decorative fonts for the light (Founders Day) welcome style -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Cormorant+Garamond:ital,wght@0,700;1,600&family=Great+Vibes&family=Playfair+Display:wght@900&family=Kaushan+Script&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Cormorant+Garamond:ital,wght@0,700;1,600&family=Dancing+Script:wght@700&family=Great+Vibes&family=Kaushan+Script&family=Lobster&family=Montserrat:wght@400;700;900&family=Oswald:wght@500;700&family=Playfair+Display:wght@700;900&display=swap">
 
-    <link rel="stylesheet" href="css/display.css?v=20260902b">
+    <link rel="stylesheet" href="css/slides.css?v=20261026a">
+    <link rel="stylesheet" href="css/display.css?v=20261026a">
 </head>
 
 <body class="display-page">
 
 <!-- Welcome Screen -->
 <section id="welcomeScreen">
+
+    <!-- The editable Welcome Screen design for the current occasion
+         (made on the Announcements page → Welcome Screens tab). -->
+    <div id="welcomeDesign" hidden>
+        <div id="welcomeDesignStage"></div>
+        <div id="welcomeDesignCountdown" class="slide-countdown welcome-countdown" hidden></div>
+    </div>
 
 
 
@@ -81,13 +89,21 @@
     </section>
 
 
+    <!-- Announcement slides (made on the Announcements page) -->
+    <section id="announcementScreen">
+        <div id="announcementStage"></div>
+        <div id="announcementCountdown" class="slide-countdown" hidden></div>
+    </section>
+
+
     <div id="fullscreenPrompt" class="fullscreen-prompt" style="display:none;">
         <button id="enterFullscreenButton" type="button" class="fullscreen-prompt-button">
             🖥️ Tap to Enter Fullscreen
         </button>
     </div>
 
-        <script src="js/display.js?v=20261004a"></script>
+    <script src="js/slides.js?v=20261026a"></script>
+    <script src="js/display.js?v=20261026a"></script>
 
 </body>
 </html>

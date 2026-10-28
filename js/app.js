@@ -602,6 +602,17 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 currentDisplayText.textContent = "Hymn Displayed";
             }
+        } else if (displayMode === "announcement") {
+            let show = null;
+            try {
+                show = JSON.parse(localStorage.getItem("announcementShow") || "null");
+            } catch (error) {
+                show = null;
+            }
+            currentDisplayText.textContent =
+                show && show.mode === "slideshow"
+                    ? "Announcements Slideshow"
+                    : `Announcement: ${(show && show.label) || "Slide"}`;
         } else {
             currentDisplayText.textContent = "Welcome Screen";
         }
@@ -1804,7 +1815,7 @@ renderCountdownStatus();
 // If scripture is already live (e.g. this page was refreshed mid-
 // service), bring the preview up right away so it's mirroring the
 // TV from the start rather than waiting for the next "Display".
-if (localStorage.getItem("displayMode") === "scripture") {
+if (["scripture", "announcement"].includes(localStorage.getItem("displayMode"))) {
     showLivePreview();
 }
 
@@ -1840,6 +1851,7 @@ window.addEventListener("storage", (event) => {
 
     if (
         event.key === "displayMode" ||
+        event.key === "announcementShow" ||
         event.key === "displayedReference" ||
         event.key === "displayedTranslation"
     ) {
